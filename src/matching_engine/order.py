@@ -32,12 +32,3 @@ class Order:
     anterior: Order | None = None
     proxima: Order | None = None
 
-o = Order(order_id=1, side=Side.BUY, order_type=OrderType.LIMIT, qty=100, price=Decimal("10.50"), seq=0)
-print(o)
-
-m = Order(order_id=2, side=Side.SELL, order_type=OrderType.MARKET,
-          qty=150, seq=1)
-print(m)
-
-# 3 — nasce solta
-print(o.anterior, o.proxima)
