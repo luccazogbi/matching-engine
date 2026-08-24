@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 from enum import Enum 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
+from itertools import count
 
 """
     Enum: é uma classe especial usada para 
@@ -18,17 +20,51 @@ class OrderType(Enum):
 
 class PegReference(Enum):
     BID = "bid"
-    SELL = "sell"
+    OFFER = "offer"
+
+# Counter variables (put "_" because it indicates that belongs only to this module "order.py")
+_id_counter = count(1)
+_seq_counter = count(1)
+
 
 @dataclass 
 class Order:
-    order_id: int 
+
+    order_id: int = field(init=False) # Don't receive data from the constructor
+    seq: int = field(init=False)
     side: Side
     order_type: OrderType 
     qty: int
-    seq: int 
     price: Decimal | None = None
     peg_reference: PegReference | None = None
     anterior: Order | None = None
     proxima: Order | None = None
 
+    def __post_init__(self):
+        self.order_id = next(_id_counter)
+        self.seq = next(_seq_counter)
+
+# Good approach to implement in each module, because it executes a code block only when this file is executed directly
+if __name__ == "__main__": 
+
+    a = Order(
+        side=Side.BUY,
+        order_type=OrderType.LIMIT,
+        qty=100,
+        price=Decimal("10.50")
+    )
+
+    b = Order(
+        side=Side.BUY,
+        order_type=OrderType.LIMIT,
+        qty=200,
+        price=Decimal("10.50")
+    )
+
+    c = Order(
+            side=Side.BUY,
+            order_type=OrderType.MARKET,
+            qty=200
+        )
+
+    print(c)
