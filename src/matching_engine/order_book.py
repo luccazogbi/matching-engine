@@ -3,6 +3,10 @@
     a dict to identify an order based on the id, because we'll remove and modifiy by the id. 
 
     Furthermore, we're going to use heap to have access to the lowest or higher value along our OrderBook (both in SELL and BUY side)
+
+    Something I thought: The OrderBook is responsible for managing everything. You have two sides: SELL and BUY. Inside of each one,
+    you have different price levels. So, the OrderBook is responsible for having all of this. In this way, we'll have only ONE 
+    OrderBook. 
 """
 
 from decimal import Decimal
@@ -13,29 +17,41 @@ import heapq
 
 class OrderBook:
     def __init__(self):
-        self.bids = {} # price - PriceLevel (BUY)
-        self.offers = {} # price - PriceLevel (SELL)
+        self.bids = {} # Key: price | Value: PriceLevel (BUY)
+        self.offers = {} # Key: price | Value: PriceLevel (SELL)
 
-        self.orders = {}  # order_id - Order (average O(1) lookup) 
+        self.orders = {}  # Key: order_id | Value: Order (average O(1) lookup) 
 
         self.bid_prices = []
         self.offer_prices = []
 
-    def get_or_create_level(self, side, price):
+    def get_or_create_level(
+            self, 
+            side: Side,
+            price: Decimal
+    ) -> PriceLevel:
+        
         if side is Side.BUY:
+
             if price in self.bids: # average O(1) lookup
-                return 
+                return self.bids[price] # It'll return the PriceLevel object
             else:
                 self.bids[price] = PriceLevel(price)
-                heapq.heappush(self.bid_prices, -Decimal(price))
+                heapq.heappush(self.bid_prices, -price) # Add the best bid inside this specify list called "self.bid_prices"
+                return self.bids[price] # Create and return the PriceLevel object
 
-        else:
+        elif side is Side.SELL:
+
             if price in self.offers:
-                return
+                return self.offers[price]
             else:
                 self.offers[price] = PriceLevel(price)
-                heapq.heappush(self.offer_prices, Decimal(price))
+                heapq.heappush(self.offer_prices, price)
+                return self.offers[price]
 
+        else: 
+            raise ValueError("Invalid side")
+  
 if __name__ == "__main__":
     prices = []
     ob = OrderBook()    
