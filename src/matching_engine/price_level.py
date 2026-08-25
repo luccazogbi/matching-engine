@@ -13,6 +13,12 @@ class PriceLevel:
         self.last = None 
         self.total_qty = 0
 
+    def __repr__(self):
+        return (
+            f"PriceLevel(price={self.price}, "
+            f"total_qty={self.total_qty})"
+        )
+
     # It's a FIFO case, that's why i'm inserting at the end
     def last_insert(self, order):
 
