@@ -33,3 +33,15 @@ def test_reuse_existing_bid_level():
     # Tests
     assert level1 is level2
     assert len(ob.bid_prices) == 1
+    
+def test_create_offer_level():
+    ob = OrderBook()
+
+    level = ob.get_or_create_level(
+        Side.SELL,
+        Decimal("10.50")
+    )
+
+    assert Decimal("10.50") in ob.offers
+    assert ob.offers[Decimal("10.50")] is level
+    assert ob.offer_prices[0] == Decimal("10.50")  
