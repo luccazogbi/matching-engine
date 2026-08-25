@@ -54,17 +54,48 @@ class OrderBook:
             raise ValueError("Invalid side")
 
     def best_bid(self) -> Decimal | None:
-        if not self.bid_prices:
-            return None
-        
-        return -self.bid_prices[0]
+        while self.bid_prices:
+
+            current_best_bid = -self.bid_prices[0]
+
+            if current_best_bid in self.bids: # If the price still exists in the dict
+                return current_best_bid
+
+            heapq.heappop(self.bid_prices)  # Lazy deletion - O(log P)
+
+        return None
 
     def best_offer(self) -> Decimal | None:
-        if not self.offer_prices:
-            return None
-        
-        return self.offer_prices[0]
-        
+        while self.offer_prices:
+
+            current_best_offer = self.offer_prices[0]
+
+            if current_best_offer in self.offers: # If the price still exists in the dict
+                return current_best_offer
+
+            heapq.heappop(self.offer_prices) # Lazy deletion - O(log P)
+
+        return None
+
+    def remove_empty_level(
+    self,
+    side: Side,
+    price: Decimal
+    ):  
+        if side is Side.BUY:
+            if price in self.bids: # Does the price exist in the dict?
+                level = self.bids[price] # Taking the level and verifying if it's empty
+                if level.first is None:
+                    del self.bids[price]
+
+        elif side is Side.SELL:
+            if price in self.offers:
+                level = self.offers[price]
+                if level.first is None:
+                    del self.offers[price]
+
+        else:
+            raise ValueError("Invalid side")
 
 
 if __name__ == "__main__":

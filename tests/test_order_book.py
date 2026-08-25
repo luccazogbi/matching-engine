@@ -88,6 +88,7 @@ def test_best_bid():
 
     assert ob.best_bid() == Decimal("10.80")
 
+
 def test_best_offer():
     ob = OrderBook()
 
@@ -102,3 +103,44 @@ def test_best_prices_when_empty():
 
     assert ob.best_bid() is None
     assert ob.best_offer() is None
+
+def test_best_bid_removes_stale_price():
+    # Tests lazy deletion of a stale bid price from the heap.
+    ob = OrderBook()
+
+    ob.get_or_create_level(Side.BUY, Decimal("10.00"))
+    ob.get_or_create_level(Side.BUY, Decimal("9.99"))
+    ob.get_or_create_level(Side.BUY, Decimal("9.98"))
+
+    assert ob.best_bid() == Decimal("10.00")
+    assert Decimal("10.00") in ob.bids
+
+    ob.remove_empty_level(
+        Side.BUY,
+        Decimal("10.00")
+    )
+
+    assert Decimal("10.00") not in ob.bids
+    assert ob.best_bid() == Decimal("9.99")
+    assert -Decimal("10.00") not in ob.bid_prices
+
+
+def test_best_offer_removes_stale_price():
+    # Tests lazy deletion of a stale offer price from the heap.
+    ob = OrderBook()
+
+    ob.get_or_create_level(Side.SELL, Decimal("10.00"))
+    ob.get_or_create_level(Side.SELL, Decimal("10.01"))
+    ob.get_or_create_level(Side.SELL, Decimal("10.02"))
+
+    assert ob.best_offer() == Decimal("10.00")
+    assert Decimal("10.00") in ob.offers
+
+    ob.remove_empty_level(
+        Side.SELL,
+        Decimal("10.00")
+    )
+
+    assert Decimal("10.00") not in ob.offers
+    assert ob.best_offer() == Decimal("10.01")
+    assert Decimal("10.00") not in ob.offer_prices
