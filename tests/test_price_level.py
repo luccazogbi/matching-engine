@@ -73,3 +73,30 @@ def test_remove_middle():
     assert b.next_order is None
 
     assert level.total_qty == 150
+
+def test_remove_last():
+    level = PriceLevel(Decimal(10.50))
+    a = Order(side=Side.BUY, order_type=OrderType.LIMIT, qty=100, price=Decimal(10.50))
+    b = Order(side=Side.BUY, order_type=OrderType.LIMIT, qty=200, price=Decimal(10.50))
+    c = Order(side=Side.BUY, order_type=OrderType.LIMIT, qty=50, price=Decimal(10.50))
+    level.last_insert(a)
+    level.last_insert(b)
+    level.last_insert(c)
+
+    removed = level.remove_order(c)
+
+    # Tests 
+    assert removed is c
+
+    assert level.first is a
+    assert level.last is b
+
+    assert a.next_order is b
+    assert b.previous_order is a
+    assert b.next_order is None
+
+    assert c.previous_order is None
+    assert c.next_order is None
+
+    assert level.total_qty == 300
+
