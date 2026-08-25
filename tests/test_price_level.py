@@ -117,3 +117,13 @@ def test_remove_only_order():
     assert a.next_order is None
 
     assert level.total_qty == 0
+
+def test_remove_from_empty_level():
+    level = PriceLevel(Decimal(10.50))
+    removed = level.remove_first()
+
+    # Tests 
+    assert removed is None
+    assert level.first is None
+    assert level.last is None
+    assert level.total_qty == 0
