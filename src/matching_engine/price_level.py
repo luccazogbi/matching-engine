@@ -1,4 +1,5 @@
-# A PriceLevel represents all the orders that exists in the same price. This module'll be responsible for that.
+# A PriceLevel represents all the orders that exists in the same price, which means it is the doubly linked list.
+# This module'll be responsible for that. 
 ## Furthermore, we have a certain sequence to be respected, which is a FIFO (First In, First Out)
 
 
