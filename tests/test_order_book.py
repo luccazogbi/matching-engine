@@ -5,6 +5,9 @@ from decimal import Decimal
 from matching_engine.order import Side
 from matching_engine.order_book import OrderBook
 
+# Tests for the get_or_create_level method of order_book.py
+#-----------------------------------------------------\\-----------------------------------------------------# 
+
 def test_get_or_create_bid_level():
     ob = OrderBook()
 
@@ -73,3 +76,29 @@ def test_invalid_side():
             Decimal("10.50")
         )
 
+# Tests for best_bid() & best_offer() method
+#-----------------------------------------------------\\-----------------------------------------------------# 
+
+def test_best_bid():
+    ob = OrderBook()
+
+    ob.get_or_create_level(Side.BUY, Decimal("10.20"))
+    ob.get_or_create_level(Side.BUY, Decimal("10.80"))
+    ob.get_or_create_level(Side.BUY, Decimal("10.50"))
+
+    assert ob.best_bid() == Decimal("10.80")
+
+def test_best_offer():
+    ob = OrderBook()
+
+    ob.get_or_create_level(Side.SELL, Decimal("10.90"))
+    ob.get_or_create_level(Side.SELL, Decimal("10.60"))
+    ob.get_or_create_level(Side.SELL, Decimal("10.70"))
+
+    assert ob.best_offer() == Decimal("10.60")
+
+def test_best_prices_when_empty():
+    ob = OrderBook()
+
+    assert ob.best_bid() is None
+    assert ob.best_offer() is None
