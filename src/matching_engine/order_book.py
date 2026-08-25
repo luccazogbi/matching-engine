@@ -11,9 +11,11 @@
 
 from decimal import Decimal
 
-from .order import Order, Side
+from .order import Order, Side, OrderType
 from .price_level import PriceLevel
+from itertools import zip_longest
 import heapq
+
 
 class OrderBook:
     def __init__(self):
@@ -26,6 +28,47 @@ class OrderBook:
         self.bid_prices = []
         self.offer_prices = []
 
+    def __str__(self) -> str:
+        showing_bid_prices = sorted(self.bids.keys(), reverse=True) # descending order
+        showing_offer_prices = sorted(self.offers.keys()) # ascending order
+        lines_bids = []
+        lines_offers = []
+
+        for price in showing_bid_prices:
+            level = self.bids[price]
+            current_order = level.first
+
+            while current_order is not None:
+                lines_bids.append(
+                    f"{current_order.qty} @ {price}"
+                )
+
+                current_order = current_order.next_order
+
+        for price in showing_offer_prices:
+            level = self.offers[price]
+            current_order = level.first
+
+            while current_order is not None:
+
+                lines_offers.append(
+                    f"{current_order.qty} @ {price}"
+                )
+
+                current_order = current_order.next_order
+
+        book_lines = [
+            f"{'Ordens de Compra':<20} | Ordens de Venda",
+            f"{'-' * 20}-|-----------------"
+        ]
+
+        for bid, offer in zip_longest(lines_bids, lines_offers, fillvalue=""):
+            book_lines.append(
+                f"{bid:<20} | {offer}"
+            )
+
+        return "\n".join(book_lines)
+    
     def get_or_create_level(
             self, 
             side: Side,
@@ -99,20 +142,4 @@ class OrderBook:
 
 
 if __name__ == "__main__":
-    prices = []
-    ob = OrderBook()    
-
-    heapq.heappush(ob.offer_prices, Decimal("10.50"))
-    heapq.heappush(ob.offer_prices, Decimal("10.20"))
-    heapq.heappush(ob.offer_prices, Decimal("10.80"))
-
-    print(ob.offer_prices)
-    print(ob.offer_prices[0])
-
-    heapq.heappush(ob.bid_prices, -Decimal("10.50"))
-    heapq.heappush(ob.bid_prices, -Decimal("10.20"))
-    heapq.heappush(ob.bid_prices, -Decimal("10.80"))
-
-    best_bid = -ob.bid_prices[0]
-    print(ob.bid_prices)
-    print(best_bid)
+    ob = OrderBook()
