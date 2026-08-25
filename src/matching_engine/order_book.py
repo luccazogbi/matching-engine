@@ -22,6 +22,7 @@ class OrderBook:
 
         self.orders = {}  # Key: order_id | Value: Order (average O(1) lookup) 
 
+        # It'll be used to store the best BID and best OFFER (ASK)
         self.bid_prices = []
         self.offer_prices = []
 
@@ -51,7 +52,21 @@ class OrderBook:
 
         else: 
             raise ValueError("Invalid side")
-  
+
+    def best_bid(self) -> Decimal | None:
+        if not self.bid_prices:
+            return None
+        
+        return -self.bid_prices[0]
+
+    def best_offer(self) -> Decimal | None:
+        if not self.offer_prices:
+            return None
+        
+        return self.offer_prices[0]
+        
+
+
 if __name__ == "__main__":
     prices = []
     ob = OrderBook()    
