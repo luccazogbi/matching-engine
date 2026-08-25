@@ -23,5 +23,29 @@ def test_insert_orders():
     assert b.next_order is c
     assert c.previous_order is b
 
+def test_remove_first():
+    level = PriceLevel(Decimal(10.50))
+    a = Order(side=Side.BUY, order_type=OrderType.LIMIT, qty=100, price=Decimal(10.50))
+    b = Order(side=Side.BUY, order_type=OrderType.LIMIT, qty=200, price=Decimal(10.50))
+    c = Order(side=Side.BUY, order_type=OrderType.LIMIT, qty=50, price=Decimal(10.50))
+    level.last_insert(a)
+    level.last_insert(b)
+    level.last_insert(c)
 
+    removed = level.remove_first()
+
+    # Tests 
+    assert removed is a
+
+    assert level.first is b
+    assert level.last is c
+
+    assert b.previous_order is None
+    assert b.next_order is c
+    assert c.previous_order is b
+
+    assert a.previous_order is None
+    assert a.next_order is None
+
+    assert level.total_qty == 250
 
