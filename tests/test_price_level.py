@@ -100,3 +100,20 @@ def test_remove_last():
 
     assert level.total_qty == 300
 
+def test_remove_only_order():
+    level = PriceLevel(Decimal(10.50))
+    a = Order(side=Side.BUY, order_type=OrderType.LIMIT, qty=100, price=Decimal(10.50))
+    level.last_insert(a)
+
+    removed = level.remove_order(a)
+
+    # Tests 
+    assert removed is a
+
+    assert level.first is None
+    assert level.last is None
+
+    assert a.previous_order is None
+    assert a.next_order is None
+
+    assert level.total_qty == 0
