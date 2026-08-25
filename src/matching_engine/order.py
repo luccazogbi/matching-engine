@@ -26,7 +26,7 @@ class PegReference(Enum):
 _id_counter = count(1)
 _seq_counter = count(1)
 
-
+# it generates some methods automatically for us (very often implemented when the class is used to store and transport data)
 @dataclass 
 class Order:
 
@@ -37,8 +37,8 @@ class Order:
     qty: int
     price: Decimal | None = None
     peg_reference: PegReference | None = None
-    anterior: Order | None = None
-    proxima: Order | None = None
+    previous_order: Order | None = None
+    next_order: Order | None = None
 
     def __post_init__(self):
         self.order_id = next(_id_counter)
@@ -66,5 +66,6 @@ if __name__ == "__main__":
             order_type=OrderType.MARKET,
             qty=200
         )
-
+    print(a)
+    print(b)
     print(c)
