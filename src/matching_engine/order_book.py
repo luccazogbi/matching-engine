@@ -143,3 +143,61 @@ class OrderBook:
 
 if __name__ == "__main__":
     ob = OrderBook()
+
+    # BUY Orders
+    buy_1 = Order(
+        side=Side.BUY,
+        order_type=OrderType.LIMIT,
+        qty=300,
+        price=Decimal("10.10")
+    )
+
+    buy_2 = Order(
+        side=Side.BUY,
+        order_type=OrderType.LIMIT,
+        qty=300,
+        price=Decimal("10.10")
+    )
+
+    buy_3 = Order(
+        side=Side.BUY,
+        order_type=OrderType.LIMIT,
+        qty=200,
+        price=Decimal("10.00")
+    )
+
+    # SELL Order
+    
+    sell_1 = Order(
+        side=Side.SELL,
+        order_type=OrderType.LIMIT,
+        qty=100,
+        price=Decimal("10.50")
+    ) 
+
+
+    sell_2 = Order(
+        side=Side.SELL,
+        order_type=OrderType.LIMIT,
+        qty=100,
+        price=Decimal("10.10")
+    ) 
+
+    # Get/Create the correct PriceLevels for BUY Side
+    level = ob.get_or_create_level(Side.BUY, buy_1.price)
+    level.last_insert(buy_1)
+    level.last_insert(buy_2)
+
+    level = ob.get_or_create_level(Side.BUY, buy_3.price)
+    level.last_insert(buy_3)
+
+    # Get/Create the correct PriceLevels for SELL Side
+    level = ob.get_or_create_level(Side.SELL, sell_1.price)
+    level.last_insert(sell_1)
+
+    level = ob.get_or_create_level(Side.SELL, sell_2.price)
+    level.last_insert(sell_2)
+
+    print(ob)
+
+        
