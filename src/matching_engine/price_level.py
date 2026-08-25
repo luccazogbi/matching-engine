@@ -3,7 +3,7 @@
 
 
 from decimal import Decimal
-from order import Order
+from .order import Order
 
 class PriceLevel: 
 
@@ -30,4 +30,36 @@ class PriceLevel:
 
             self.total_qty += new_node.qty
 
+    def remove_first(self):
 
+        """
+        Here we have a O(1) complexity, because we already have a direct reference
+        to the first element of the queue. In this way, we don't have to cross all of it 
+        to find the first element. 
+        """
+        # Nothing in the list
+        if self.first is None:
+            return None
+
+        order_removed = self.first
+        
+        if order_removed.next_order is None:
+            self.first = None
+            self.last = None
+            self.total_qty -= order_removed.qty
+
+            # Cleaning the removed order
+            order_removed.previous_order = None
+            order_removed.next_order = None
+            return order_removed
+        
+        else:
+
+            self.total_qty -= order_removed.qty
+            self.first = order_removed.next_order
+            self.first.previous_order = None
+
+            # Cleaning the removed order
+            order_removed.next_order = None
+            order_removed.previous_order = None
+            return order_removed
