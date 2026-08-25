@@ -63,3 +63,64 @@ class PriceLevel:
             order_removed.next_order = None
             order_removed.previous_order = None
             return order_removed
+
+    def remove_order(self, order): # O(1) complexity / No loops
+
+        # 1. case: Empty list
+        if self.first is None:
+            return None
+
+        order_removed = order 
+       
+        # 2. case: One element list
+        if order_removed is self.first and order_removed is self.last:
+            self.first = None
+            self.last = None
+
+            self.total_qty -= order_removed.qty
+
+            # Cleaning the removed order
+            order_removed.next_order = None
+            order_removed.previous_order = None
+            return order_removed
+
+        # 3. case: The element to be removed is the FIRST in the queue
+        elif order_removed  is self.first:
+
+            self.first = order_removed.next_order
+            self.first.previous_order = None
+
+            self.total_qty -= order_removed.qty
+
+            # Cleaning the removed order
+            order_removed.next_order = None
+            order_removed.previous_order = None
+            return order_removed
+
+        # 4. case: The element to be removed is the LAST in the queue
+        elif order_removed is self.last:
+            self.last = order_removed.previous_order
+            self.last.next_order = None
+
+            self.total_qty -= order_removed.qty
+
+            # Cleaning the removed order
+            order_removed.next_order = None
+            order_removed.previous_order = None
+            return order_removed
+
+        # 5. case: General case
+        else:
+            
+            prev_order = order_removed.previous_order
+            next_order = order_removed.next_order 
+
+            prev_order.next_order = order_removed.next_order
+            next_order.previous_order = order_removed.previous_order
+
+            self.total_qty -= order_removed.qty
+
+            # Cleaning the removed order
+            order_removed.next_order = None
+            order_removed.previous_order = None
+            return order_removed
