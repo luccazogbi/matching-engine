@@ -1,3 +1,5 @@
+import pytest
+
 from decimal import Decimal
 
 from matching_engine.order import Side
@@ -61,3 +63,13 @@ def test_reuse_existing_offer_level():
 
     assert level1 is level2
     assert len(ob.offer_prices) == 1
+
+def test_invalid_side():
+    ob = OrderBook()
+
+    with pytest.raises(ValueError):
+        ob.get_or_create_level(
+            "invalid",
+            Decimal("10.50")
+        )
+
