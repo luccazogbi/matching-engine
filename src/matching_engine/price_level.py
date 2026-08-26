@@ -131,3 +131,16 @@ class PriceLevel:
             order_removed.next_order = None
             order_removed.previous_order = None
             return order_removed
+
+    def fill_first(self, qty):
+
+        first_order = self.first
+
+        first_order -= qty
+        self.total_qty -= qty
+
+        if first_order == 0:
+            return self.remove_first()
+        
+        else:
+            return None
