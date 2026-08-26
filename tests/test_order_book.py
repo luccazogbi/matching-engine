@@ -16,7 +16,6 @@ def test_get_or_create_bid_level():
         Decimal("10.50")
     )
 
-    # Tests
     assert Decimal("10.50") in ob.bids
     assert ob.bids[Decimal("10.50")] is level
     assert ob.bid_prices[0] == -Decimal("10.50")
@@ -35,7 +34,6 @@ def test_reuse_existing_bid_level():
         Decimal("10.50")
     )
 
-    # Tests
     assert level1 is level2
     assert len(ob.bid_prices) == 1
 
@@ -144,3 +142,29 @@ def test_best_offer_removes_stale_price():
     assert Decimal("10.00") not in ob.offers
     assert ob.best_offer() == Decimal("10.01")
     assert Decimal("10.00") not in ob.offer_prices
+
+def test_best_price_when_empty():
+    ob = OrderBook()
+
+    assert ob.best_price(Side.BUY) is None
+    assert ob.best_price(Side.SELL) is None
+
+
+def test_best_price_dispatches_to_correct_side():
+    ob = OrderBook()
+
+    ob.get_or_create_level(
+        Side.BUY,
+        Decimal("10.00")
+    )
+
+    ob.get_or_create_level(
+        Side.SELL,
+        Decimal("10.50")
+    )
+
+    assert ob.best_price(Side.BUY) == ob.best_bid()
+    assert ob.best_price(Side.SELL) == ob.best_offer()
+
+    assert ob.best_price(Side.BUY) == Decimal("10.00")
+    assert ob.best_price(Side.SELL) == Decimal("10.50")

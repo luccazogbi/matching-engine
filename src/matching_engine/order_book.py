@@ -123,6 +123,21 @@ class OrderBook:
 
         return None
 
+    def best_price(
+    self,
+    side: Side
+    ) -> Decimal | None:
+        
+        if side is Side.BUY:
+            return self.best_bid()
+
+        if side is Side.SELL:
+            return self.best_offer()
+
+        raise ValueError("Invalid side")
+
+
+
     def remove_empty_level(
     self,
     side: Side,
