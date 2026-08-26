@@ -25,7 +25,7 @@ class MatchingEngine:
             qty: int
     ) -> list[Trade]:
 
-        # Create the limit order (aggresive)
+        # Create the limit order (aggresive) based on what it was given 
         order = Order(side=side, order_type=OrderType.LIMIT, qty=qty, price=price)
         list_trades = []
 
@@ -85,7 +85,3 @@ class MatchingEngine:
             self.book.orders[order.order_id] = order
 
         return list_trades
-
-if __name__ == "__main__": 
-
-        
