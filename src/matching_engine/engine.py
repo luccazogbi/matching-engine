@@ -48,6 +48,7 @@ class MatchingEngine:
             if not price_is_acceptable:
                 break
 
+            # Obtain all the PriceLevels from the other side compared to the top created order
             opposite_levels = self.book.levels_for(side.opposite)
 
             # Level where it's going to have the match
@@ -56,28 +57,24 @@ class MatchingEngine:
 
             while order.qty > 0 and matching_level.first is not None: 
 
-                # Picking the first element
-                match = matching_level.first
-
-                trade_qty = min(order.qty, match.qty)
-
-                # When I subtract the lowest value from trade_qty, I'll have 0
+                # MatchingEngine dealing with the agressive order
+                trade_qty = min(order.qty, matching_level.first.qty)
                 order.qty -= trade_qty
-                match.qty -= trade_qty
-                matching_level.total_qty -= trade_qty
 
+                # PriceLevel dealing with the FIFO consumption 
+                first_consumed = matching_level.fill_first(trade_qty)
                 level_trade_qty += trade_qty
 
-                if match.qty == 0:
-                    matching_level.remove_first()
-                    del self.book.orders[match.order_id]
+                if first_consumed is not None:
+                    del self.book.orders[first_consumed.order_id]
 
+            # Explained: Put condition here because I did a test putting just a PriceLevel (with no orders)
+            # and it was showing "Trade, price: 20, qty: 0 ".
             if level_trade_qty > 0:
                 list_trades.append(Trade(opposite_price, level_trade_qty))    
 
             # If the last matching level is empty
             if matching_level.first is None:
-
                 self.book.remove_empty_level(side.opposite, opposite_price)
 
         # If there's any left over inside order.qty
@@ -89,9 +86,6 @@ class MatchingEngine:
 
         return list_trades
 
-        
-
-        
-
+if __name__ == "__main__": 
 
         
