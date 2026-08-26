@@ -28,7 +28,7 @@ class OrderBook:
         self.bid_prices = []
         self.offer_prices = []
 
-    def _levels_for(self, side: Side):
+    def levels_for(self, side: Side):
         if side is Side.BUY:
             return self.bids
 
@@ -36,6 +36,7 @@ class OrderBook:
             return self.offers
 
         raise ValueError("Invalid side")
+
 
     def __str__(self) -> str:
         showing_bid_prices = sorted(self.bids.keys(), reverse=True) # descending order
@@ -84,7 +85,7 @@ class OrderBook:
             price: Decimal
     ) -> PriceLevel:
 
-        levels = self._levels_for(side)
+        levels = self.levels_for(side)
 
         if price in levels: # average O(1) lookup
             return levels[price] # It'll return the PriceLevel object
@@ -144,7 +145,7 @@ class OrderBook:
     price: Decimal
     ):  
 
-        levels = self._levels_for(side)
+        levels = self.levels_for(side)
 
         if price in levels: # Does the price exist in the dict?
             level = levels[price] # Taking the level and verifying if it's empty

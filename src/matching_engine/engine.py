@@ -1,8 +1,8 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 from .order_book import OrderBook
-from .order import Side, Order, OrderType, PegReference
-from .price_level import PriceLevel 
+from .order import Side, Order, OrderType
+
 
 @dataclass
 class Trade:
@@ -29,7 +29,7 @@ class MatchingEngine:
         order = Order(side=side, order_type=OrderType.LIMIT, qty=qty, price=price)
         list_trades = []
 
-        while order.qty != 0: 
+        while order.qty > 0: 
 
             opposite_price = self.book.best_price(side.opposite)        
 
@@ -48,7 +48,7 @@ class MatchingEngine:
             if not price_is_acceptable:
                 break
 
-            opposite_levels = self.book.offers if side is Side.BUY else self.book.bids
+            opposite_levels = self.book.levels_for(side.opposite)
 
             # Level where it's going to have the match
             matching_level = opposite_levels[opposite_price]
@@ -72,7 +72,8 @@ class MatchingEngine:
                     matching_level.remove_first()
                     del self.book.orders[match.order_id]
 
-            list_trades.append(Trade(opposite_price, level_trade_qty))    
+            if level_trade_qty > 0:
+                list_trades.append(Trade(opposite_price, level_trade_qty))    
 
             # If the last matching level is empty
             if matching_level.first is None:
