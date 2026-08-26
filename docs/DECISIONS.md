@@ -193,6 +193,99 @@ Accepted.
 
 ---
 
+## D07 — Trade granularity
+
+### Decision
+
+Trades are aggregated **by price level**, not by counterparty order.
+
+A single incoming order that consumes several resting orders at the same price produces **one**
+`Trade`. If it sweeps more than one price level, it produces one `Trade` per level.
+
+### Motivation
+
+The example given in the challenge statement fixes this behaviour. Starting from a book with two
+resting sell orders at the same price — one of 100 and one of 200 — the statement shows:
+
+```text
+>>> market buy 150
+Trade, price: 20, qty: 150
+```
+
+That command consumed the first order entirely (100) and part of the second (50), yet the expected
+output is a **single line** with a quantity of 150. Emitting one trade per counterparty would print
+two lines and would not match the specification.
+
+### Trade-off
+
+A real exchange emits one trade per `(aggressor, resting order)` pair, because each execution is a
+distinct contract between two identifiable participants, and both sides must be reported
+individually for clearing and settlement.
+
+This project has no notion of participant — an order carries side, type, price and quantity, but no
+owner — so the per-counterparty distinction carries no information here. Aggregating by level
+matches the specified output without losing anything the model represents.
+
+The behaviour is confined to the matching loop: the inner loop accumulates the executed quantity
+while consuming the queue of a level, and a single `Trade` is emitted when that level is exhausted
+or the incoming order is filled. Changing to per-counterparty granularity would mean emitting inside
+the inner loop instead, and nothing else.
+
+### Possible extension
+
+A richer version would record **both** granularities: every individual execution against a resting
+order, plus the aggregated view used for output. The engine would keep the detailed list and expose
+the aggregated one, so the required output stays unchanged while the finer detail remains available
+for inspection.
+
+This was deliberately not implemented, for two reasons.
+
+The first is informational. Each individual execution is only meaningful when the two sides can be
+told apart, and in this model they cannot: an order has no owner, so two executions at the same
+price differ in nothing but the arrival sequence of the resting order they consumed. The detail
+would be recorded and never used.
+
+The second is scope. The statement specifies the aggregated output, and the effort is better spent
+on the mandatory requirements.
+
+The extension becomes worthwhile as soon as the model gains participants — at that point each
+execution identifies a distinct counterparty pair, which is what clearing and settlement actually
+require, and the aggregation would have to be relaxed to per-counterparty reporting.
+
+### Status
+
+Accepted.
+
+---
+
+## D08 — Limit orders that would cross
+
+### Decision
+
+A limit order whose price crosses the opposite side is **executed**, not ignored.
+
+It consumes the opposite side while the price is acceptable, and any remaining quantity rests in the
+book at its own limit price.
+
+### Motivation
+
+The statement explicitly allows either behaviour, provided the choice is justified.
+
+Executing was chosen for three reasons:
+
+1. **It is the behaviour of real markets.** An order priced through the opposite side is a
+   marketable limit order, and exchanges execute it.
+2. **It keeps the book consistent.** Ignoring a crossing order would leave the best bid greater than
+   or equal to the best offer — a crossed book, which is an invalid state for a matching engine.
+3. **It unifies the algorithm.** With execution in place, a market order is the same procedure with
+   an unconstrained price test, rather than a separate code path.
+
+### Status
+
+Accepted.
+
+---
+
 # Future Decisions
 
 As new implementation decisions are made, they should be documented using the structure below.
