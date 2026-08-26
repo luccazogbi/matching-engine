@@ -136,10 +136,10 @@ class PriceLevel:
 
         first_order = self.first
 
-        first_order -= qty
+        first_order.qty -= qty
         self.total_qty -= qty
 
-        if first_order == 0:
+        if first_order.qty == 0:
             return self.remove_first()
         
         else:
