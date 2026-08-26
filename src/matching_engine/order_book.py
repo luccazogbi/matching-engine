@@ -28,6 +28,15 @@ class OrderBook:
         self.bid_prices = []
         self.offer_prices = []
 
+    def _levels_for(self, side: Side):
+        if side is Side.BUY:
+            return self.bids
+
+        if side is Side.SELL:
+            return self.offers
+
+        raise ValueError("Invalid side")
+
     def __str__(self) -> str:
         showing_bid_prices = sorted(self.bids.keys(), reverse=True) # descending order
         showing_offer_prices = sorted(self.offers.keys()) # ascending order
@@ -74,28 +83,22 @@ class OrderBook:
             side: Side,
             price: Decimal
     ) -> PriceLevel:
+
+        levels = self._levels_for(side)
+
+        if price in levels: # average O(1) lookup
+            return levels[price] # It'll return the PriceLevel object
+
+        levels[price] = PriceLevel(price)
         
         if side is Side.BUY:
+            heapq.heappush(self.bid_prices, -price)
 
-            if price in self.bids: # average O(1) lookup
-                return self.bids[price] # It'll return the PriceLevel object
-            else:
-                self.bids[price] = PriceLevel(price)
-                heapq.heappush(self.bid_prices, -price) # Add the best bid inside this specify list called "self.bid_prices"
-                return self.bids[price] # Create and return the PriceLevel object
+        else:
+            heapq.heappush(self.offer_prices, price)
 
-        elif side is Side.SELL:
-
-            if price in self.offers:
-                return self.offers[price]
-            else:
-                self.offers[price] = PriceLevel(price)
-                heapq.heappush(self.offer_prices, price)
-                return self.offers[price]
-
-        else: 
-            raise ValueError("Invalid side")
-
+        return levels[price]
+    
     def best_bid(self) -> Decimal | None:
         while self.bid_prices:
 
@@ -125,21 +128,14 @@ class OrderBook:
     side: Side,
     price: Decimal
     ):  
-        if side is Side.BUY:
-            if price in self.bids: # Does the price exist in the dict?
-                level = self.bids[price] # Taking the level and verifying if it's empty
-                if level.first is None:
-                    del self.bids[price]
 
-        elif side is Side.SELL:
-            if price in self.offers:
-                level = self.offers[price]
-                if level.first is None:
-                    del self.offers[price]
+        levels = self._levels_for(side)
 
-        else:
-            raise ValueError("Invalid side")
+        if price in levels: # Does the price exist in the dict?
+            level = levels[price] # Taking the level and verifying if it's empty
 
+            if level.first is None:
+                del levels[price]
 
 if __name__ == "__main__":
     ob = OrderBook()
