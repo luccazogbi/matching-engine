@@ -353,4 +353,15 @@ def test_cancel_keeps_level_when_not_empty():
     assert eng.book.bids[Decimal("10")] is not None
     assert eng.book.best_price(Side.BUY) == Decimal("10")
     assert eng.book.bids[Decimal("10")].total_qty == 200
-    
+
+def test_cancel_unknown_id():
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+
+    oid = 1
+    unknown_id = eng.cancel(oid)
+
+    assert unknown_id is None
+    assert eng.book.best_price(Side.BUY) == Decimal("10")
+

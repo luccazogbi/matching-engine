@@ -330,3 +330,6 @@ Os tipos mais úteis para esse projeto são:
 - `ci:` mudanças em integração contínua  
     Ex.: `ci: add automated test workflow`
 
+## Problems 
+- When I do `eng.submit_limit(Side.BUY, Decimal("10.00000"), 100)` in the test, it shows all the decimal places. How to solve this?
+- When an order comes inside the orderbook, it doens't show its orderId. IT'S AN IMPORTANT THING TO DO
