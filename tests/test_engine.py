@@ -182,5 +182,19 @@ def test_limit_order_matching_passive_price():
 
     assert [str(t) for t in trades] == [
                 "Trade, price: 20, qty: 100"
-        ]
+    ]
+
+def test_limit_does_not_cross_when_price_unacceptable():
+
+    engine = MatchingEngine()
+    
+    engine.submit_limit(Side.SELL, Decimal("20"), 100)
+
+    trades = engine.submit_limit(
+        Side.BUY,
+        Decimal("19"),
+        100
+    )
+
+    assert [str(t) for t in trades] == []
     
