@@ -94,3 +94,29 @@ def test_submit_limit_partial_match():
 
     assert level.total_qty == 100
     assert level.first.qty == 100
+
+
+
+
+
+def test_submit_limit_aggressive_order_rests_remaining_qty():
+    engine = MatchingEngine()
+
+    engine.submit_limit(
+        Side.SELL,
+        Decimal("10"),
+        100
+    )
+
+    trades = engine.submit_limit(
+        Side.BUY,
+        Decimal("10"),
+        200
+    )
+
+    assert [str(t) for t in trades] == [
+        "Trade, price: 10, qty: 100"
+    ]
+
+    assert engine.book.best_price(Side.BUY) == Decimal("10")
+    assert engine.book.bids[Decimal("10")].total_qty == 100
