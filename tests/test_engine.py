@@ -197,4 +197,73 @@ def test_limit_does_not_cross_when_price_unacceptable():
     )
 
     assert [str(t) for t in trades] == []
-    
+
+# ---------------------------------------------- Market Order ---------------------------------------------- #
+
+def test_market_sweeps_multiple_levels():
+
+    engine = MatchingEngine()
+         
+    engine.submit_limit(Side.SELL, Decimal("20"), 100)
+    engine.submit_limit(Side.SELL, Decimal("22"), 100)
+    engine.submit_limit(Side.SELL, Decimal("26"), 100)
+
+    trades = engine.submit_market(
+        Side.BUY,
+        250
+    )
+
+    assert [str(t) for t in trades] == [
+        "Trade, price: 20, qty: 100",
+        "Trade, price: 22, qty: 100",
+        "Trade, price: 26, qty: 50"
+    ]
+
+    level = engine.book.offers[Decimal("26")]
+    assert level.first.qty == 50
+    assert level.total_qty == 50
+
+def test_market_without_liquidity():
+
+    engine = MatchingEngine()
+
+    trades = engine.submit_market(
+        Side.BUY,
+        100
+    )
+
+    assert [str(t) for t in trades] == []
+    assert engine.book.bids == {}
+
+def test_market_partial_liquidity_discards_remainder():
+
+    engine = MatchingEngine()
+            
+    engine.submit_limit(Side.SELL, Decimal("20"), 50)
+
+    trades = engine.submit_market(
+        Side.BUY,
+        300
+    )
+
+    assert [str(t) for t in trades] == [
+        "Trade, price: 20, qty: 50"
+    ]
+
+    assert engine.book.bids == {}
+
+def test_market_consumes_in_arrival_order():
+
+    engine = MatchingEngine()
+                
+    engine.submit_limit(Side.SELL, Decimal("20"), 100)
+    engine.submit_limit(Side.SELL, Decimal("20"), 200)
+
+    trades = engine.submit_market(
+        Side.BUY,
+        150
+    )
+
+    assert [str(t) for t in trades] == [
+            "Trade, price: 20, qty: 50"
+        ]
