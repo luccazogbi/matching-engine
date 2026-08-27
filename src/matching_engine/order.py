@@ -14,6 +14,7 @@ class Side(Enum):
     BUY = "buy"
     SELL = "sell"
 
+    
     @property
     def opposite(self):
 
