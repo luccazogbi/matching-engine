@@ -114,14 +114,14 @@ class OrderBook:
         return None
 
     def best_offer(self) -> Decimal | None:
-        while self.offer_prices:
+        while self.offer_prices: # List of order prices (can be outdated - It's proposal)
 
             current_best_offer = self.offer_prices[0]
 
             if current_best_offer in self.offers: # If the price still exists in the dict
                 return current_best_offer
 
-            heapq.heappop(self.offer_prices) # Lazy deletion - O(log P)
+            heapq.heappop(self.offer_prices) # Lazy deletion - O(log P) - Removes the lower element and calculates the new lower element
 
         return None
 
@@ -139,7 +139,7 @@ class OrderBook:
         raise ValueError("Invalid side")
 
 
-
+    # It removes from self.bids or self.offers, but it doesn't do it for the self.offer_prices and self.bid_prices (VERY IMPORTANT)
     def remove_empty_level(
     self,
     side: Side,
