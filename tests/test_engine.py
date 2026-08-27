@@ -259,11 +259,21 @@ def test_market_consumes_in_arrival_order():
     engine.submit_limit(Side.SELL, Decimal("20"), 100)
     engine.submit_limit(Side.SELL, Decimal("20"), 200)
 
+    level = engine.book.offers[Decimal("20")]
+    assert level.first.qty == 100
+    assert level.total_qty == 300
+    first_seq = level.first.seq
+
     trades = engine.submit_market(
         Side.BUY,
         150
     )
 
+    second_seq = level.first.seq
+    assert level.first.qty == 150
+    assert second_seq > first_seq
     assert [str(t) for t in trades] == [
-            "Trade, price: 20, qty: 50"
-        ]
+            "Trade, price: 20, qty: 150"
+    ]
+
+    
