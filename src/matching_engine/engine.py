@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 from .order_book import OrderBook
-from .order import Side, Order, OrderType
+from .order import Side, Order, OrderType, format_price
 from .price_level import PriceLevel
 
 
@@ -14,7 +14,7 @@ class Trade:
 
     # It defines how Trade'll be converted into string
     def __str__(self) -> str:
-        return f"Trade, price: {self.price.normalize():f}, qty: {self.qty}"
+        return f"Trade, price: {format_price(self.price)}, qty: {self.qty}"
 
 class MatchingEngine:
 

@@ -54,6 +54,10 @@ class Order:
         self.order_id = next(_id_counter)
         self.seq = next(_seq_counter)
 
+
+def format_price(price: Decimal) -> str:
+    return f"{price.normalize():f}"
+
 # Good approach to implement in each module, because it executes a code block only when this file is executed directly
 if __name__ == "__main__": 
 
