@@ -365,3 +365,19 @@ def test_cancel_unknown_id():
     assert unknown_id is None
     assert eng.book.best_price(Side.BUY) == Decimal("10")
 
+def test_cancelled_order_does_not_match():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+
+    oid = next(iter(eng.book.orders))
+    eng.cancel(oid)
+
+    trade = eng.submit_limit(Side.SELL, Decimal("10"), 100)
+    trade_market = eng.submit_market(Side.SELL, 100)
+
+    assert [str(t) for t in trade] == []
+    assert [str(t) for t in trade_market] == []
+    print(eng.book.__str__())
+        
