@@ -162,7 +162,7 @@ regra da quantidade mínima; varredura de níveis; significado de limite numa or
 - [x] Emitir a saída `Trade` no formato exato do enunciado
 - [x] Remover ordens integralmente executadas e níveis esvaziados
 - [x] Depositar no livro a quantidade remanescente da ordem agressora
-- [ ] Reproduzir o exemplo do enunciado como teste automatizado
+- [x] Reproduzir o exemplo do enunciado como teste automatizado
 - [x] Registrar a decisão sobre ordens *limit* cruzantes — `docs/DECISIONS.md`, D08
 
 **Pronto quando:** a sequência completa do exemplo do enunciado produz exatamente as três linhas `Trade` esperadas. Além disso, `limit buy 25 250` contra vendas de 100 @ 20, 100 @ 22 e 100 @ 26 gera dois negócios — a 20 e a 22 — e deixa 50 repousando a 25.
@@ -176,7 +176,7 @@ conforme fixado pelos exemplos do enunciado — *Guia §3*.
 
 - [x] Implementar o critério de aceitação irrestrita
 - [x] Descartar a quantidade remanescente, sem depositá-la no livro
-- [ ] Testar o caso de liquidez insuficiente
+- [x] Testar o caso de liquidez insuficiente
 
 **Pronto quando:** `market buy 200` contra 150 disponíveis imprime `Trade, price: 20, qty: 150` e o lado das vendas fica vazio: os 50 remanescentes não repousam no livro.
 

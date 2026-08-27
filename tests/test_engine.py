@@ -276,4 +276,35 @@ def test_market_consumes_in_arrival_order():
             "Trade, price: 20, qty: 150"
     ]
 
-    
+def test_problem_statement_sequence():
+
+    engine = MatchingEngine()
+
+    trade = engine.submit_limit(Side.BUY, Decimal("10"), 100)
+    assert [str(t) for t in trade] == []
+
+    trade = engine.submit_limit(Side.SELL, Decimal("20"), 100)
+    assert [str(t) for t in trade] == []
+
+    trade = engine.submit_limit(Side.SELL, Decimal("20"), 200)
+    assert [str(t) for t in trade] == []
+
+    trade = engine.submit_market(Side.BUY, 150)
+    assert [str(t) for t in trade] == [
+        "Trade, price: 20, qty: 150"
+    ]
+
+    trade = engine.submit_market(Side.BUY, 200)
+    assert [str(t) for t in trade] == [
+        "Trade, price: 20, qty: 150"
+    ]
+
+    trade = engine.submit_market(Side.SELL, 200)
+    assert [str(t) for t in trade] == [
+        "Trade, price: 10, qty: 100"
+    ]
+
+    assert engine.book.offers == {}
+    assert engine.book.bids == {}
+    assert engine.book.orders == {}
+        

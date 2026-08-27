@@ -106,4 +106,10 @@ class MatchingEngine:
                 self.book.remove_empty_level(order.side.opposite, opposite_price)
 
         return list_trades
-         
+
+    def cancel(self, 
+        order_id: int
+    ):
+
+        order_tb_removed = self.book.orders[order_id]
+        
