@@ -90,10 +90,11 @@ class OrderBook:
         if price in levels: # average O(1) lookup
             return levels[price] # It'll return the PriceLevel object
 
-        levels[price] = PriceLevel(price)
+        levels[price] = PriceLevel(price) # Creating a PriceLevel inside of self.bids or self.offers 
         
         if side is Side.BUY:
-            heapq.heappush(self.bid_prices, -price)
+            heapq.heappush(self.bid_prices, -price) # Storing the values of BID in a heap, in a way that the higher element
+            # stay in the first position (this occurs because I put a negative signal when passing the value to the function)
 
         else:
             heapq.heappush(self.offer_prices, price)
@@ -145,7 +146,7 @@ class OrderBook:
     price: Decimal
     ):  
 
-        levels = self.levels_for(side)
+        levels = self.levels_for(side) # levels: self.bids/offers
 
         if price in levels: # Does the price exist in the dict?
             level = levels[price] # Taking the level and verifying if it's empty

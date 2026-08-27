@@ -30,7 +30,7 @@ Premissas fixadas pelo enunciado:
 
 ### Entrega e avaliação
 
-- [ ] Projeto publicado em repositório no GitHub
+- [x] Projeto publicado em repositório no GitHub
 - [ ] Commits incrementais, com mensagens que descrevem as decisões tomadas
 - [ ] Nenhum commit concentrando parcela desproporcional da implementação
 - [ ] Capacidade de explicar integralmente a base de código, incluindo o que foi produzido com
@@ -39,16 +39,16 @@ Premissas fixadas pelo enunciado:
 
 ### Funcionais — base
 
-- [ ] **B1** Inserção de ordens com tipo, lado, preço e quantidade
-- [ ] **B2** Ordens *limit*, passivas e a preço fixo
-- [ ] **B3** Ordens *market*, executadas ao melhor preço disponível
-- [ ] **B4** Saída `Trade, price: <preço>, qty: <quantidade>` a cada negócio
-- [ ] **B5** Tratamento definido e justificado para ordens *limit* cujo preço geraria negócio
+- [x] **B1** Inserção de ordens com tipo, lado, preço e quantidade
+- [x] **B2** Ordens *limit*, passivas e a preço fixo
+- [x] **B3** Ordens *market*, executadas ao melhor preço disponível
+- [x] **B4** Saída `Trade, price: <preço>, qty: <quantidade>` a cada negócio
+- [x] **B5** Tratamento definido e justificado para ordens *limit* cujo preço geraria negócio
 
 ### Funcionais — adicionais
 
-- [ ] **A1** Visualização do livro
-- [ ] **A2** Respeito à ordem de chegada das ordens
+- [x] **A1** Visualização do livro
+- [x] **A2** Respeito à ordem de chegada das ordens
 - [ ] **A3** Cancelamento, com remoção efetiva da engine
 - [ ] **A4** Alteração de preço, quantidade ou ambos, com reposicionamento na fila
 - [ ] **A5** Ordens *pegged*, acompanhando o *bid* ou o *offer*
@@ -144,9 +144,9 @@ Ordens sem contraparte repousam no livro, na posição correta.
 **Estudar antes:** gramática dos comandos e a ordem dos argumentos (*Guia §2*); prioridade
 preço-tempo (*Guia §5*); modelo orientado a eventos (*Guia §3*).
 
-- [ ] Implementar a inserção, ainda sem cruzamento
-- [ ] Atribuir identificador e número de sequência a cada ordem aceita
-- [ ] Conferir, pela visualização, a ordenação entre níveis e dentro do nível
+- [x] Implementar a inserção, ainda sem cruzamento
+- [x] Atribuir identificador e número de sequência a cada ordem aceita
+- [x] Conferir, pela visualização, a ordenação entre níveis e dentro do nível
 
 **Pronto quando:** os três primeiros comandos do exemplo do enunciado produzem um livro com uma compra e duas vendas, com a venda de 100 à frente da de 200 no mesmo nível.
 
@@ -158,12 +158,12 @@ Lógica central de casamento de ordens. É a etapa mais importante do projeto.
 regra da quantidade mínima; varredura de níveis; significado de limite numa ordem *limit* —
 *Guia §4*. Fluxo completo do comando — *Guia §9*.
 
-- [ ] Implementar o laço de cruzamento, com o critério de aceitação parametrizado
-- [ ] Emitir a saída `Trade` no formato exato do enunciado
-- [ ] Remover ordens integralmente executadas e níveis esvaziados
-- [ ] Depositar no livro a quantidade remanescente da ordem agressora
+- [x] Implementar o laço de cruzamento, com o critério de aceitação parametrizado
+- [x] Emitir a saída `Trade` no formato exato do enunciado
+- [x] Remover ordens integralmente executadas e níveis esvaziados
+- [x] Depositar no livro a quantidade remanescente da ordem agressora
 - [ ] Reproduzir o exemplo do enunciado como teste automatizado
-- [ ] Registrar no `README.md` a decisão sobre ordens *limit* cruzantes
+- [x] Registrar a decisão sobre ordens *limit* cruzantes — `docs/DECISIONS.md`, D08
 
 **Pronto quando:** a sequência completa do exemplo do enunciado produz exatamente as três linhas `Trade` esperadas. Além disso, `limit buy 25 250` contra vendas de 100 @ 20, 100 @ 22 e 100 @ 26 gera dois negócios — a 20 e a 22 — e deixa 50 repousando a 25.
 
@@ -174,8 +174,8 @@ Caso particular do algoritmo anterior, com aceitação irrestrita de preço.
 **Estudar antes:** comportamento da quantidade não executada por insuficiência de liquidez,
 conforme fixado pelos exemplos do enunciado — *Guia §3*.
 
-- [ ] Implementar o critério de aceitação irrestrita
-- [ ] Descartar a quantidade remanescente, sem depositá-la no livro
+- [x] Implementar o critério de aceitação irrestrita
+- [x] Descartar a quantidade remanescente, sem depositá-la no livro
 - [ ] Testar o caso de liquidez insuficiente
 
 **Pronto quando:** `market buy 200` contra 150 disponíveis imprime `Trade, price: 20, qty: 150` e o lado das vendas fica vazio: os 50 remanescentes não repousam no livro.

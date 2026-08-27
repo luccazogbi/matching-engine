@@ -10,3 +10,5 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+# contexto local para assistentes de IA — nao faz parte da entrega
+CONTEXT.md
