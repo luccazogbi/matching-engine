@@ -322,3 +322,21 @@ def test_cancel_removes_order_from_book():
     assert Decimal("10") not in eng.book.bids
     assert eng.book.bid_prices == []
 
+def test_cancel_middle_of_queue():
+    eng = MatchingEngine()
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_limit(Side.BUY, Decimal("10"), 50)
+
+
+    level = eng.book.levels_for(Side.BUY)[Decimal("10")]
+    first, middle, last = level.first, level.first.next_order, level.last
+    eng.cancel(middle.order_id)   
+
+    assert first.previous_order is None
+    assert first.next_order is last
+
+    assert last.previous_order is first
+    assert last.next_order is None
+    assert level.total_qty == 150
+    
