@@ -134,6 +134,7 @@ def test_submit_limit_respects_fifo():
         150
     )
 
+    # str(t) is transforming a Trade object in string. It'll be formated by its method "__str__"
     assert [str(t) for t in trades] == [
         "Trade, price: 10, qty: 150"
     ]
@@ -141,3 +142,30 @@ def test_submit_limit_respects_fifo():
     level = engine.book.offers[Decimal("10")]
 
     assert level.first.qty == 150
+
+def test_limit_sweeps_multiple_levels():
+
+    engine = MatchingEngine()
+
+    engine.submit_limit(Side.SELL, Decimal("20"), 100)
+    engine.submit_limit(Side.SELL, Decimal("22"), 100)
+    engine.submit_limit(Side.SELL, Decimal("26"), 100)
+
+    trades = engine.submit_limit(Side.BUY, Decimal("25"), 250)
+
+    assert [str(t) for t in trades] == [
+            "Trade, price: 20, qty: 100",
+            "Trade, price: 22, qty: 100"
+    ]
+
+    level = engine.book.bids[Decimal("25")] 
+    assert level.first.qty == 50
+    assert level.total_qty == 50
+
+    level = engine.book.offers[Decimal("26")]
+    assert level.first.qty == 100
+    assert level.total_qty == 100
+
+    assert engine.book.best_price(Side.BUY) == Decimal("25")
+
+def test_limit_price_improvement

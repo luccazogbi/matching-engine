@@ -12,6 +12,7 @@ class Trade:
     price: Decimal
     qty: int 
 
+    # It defines how Trade'll be converted into string
     def __str__(self) -> str:
         return f"Trade, price: {self.price.normalize():f}, qty: {self.qty}"
 
