@@ -56,3 +56,17 @@ def test_submit_limit_order():
     assert engine.book.best_price(Side.SELL) is None
 
     assert len(engine.book.orders) == 0
+
+def test_submit_limit_without_match():
+    engine = MatchingEngine()
+
+    trades = engine.submit_limit(
+        Side.BUY,
+        Decimal("10"),
+        100
+    )
+
+    assert trades == []
+
+    assert engine.book.best_price(Side.BUY) == Decimal("10")
+    assert len(engine.book.orders) == 1
