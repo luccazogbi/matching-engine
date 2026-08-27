@@ -11,7 +11,7 @@
 
 from decimal import Decimal
 
-from .order import Order, Side, OrderType
+from .order import Order, Side, OrderType, format_price
 from .price_level import PriceLevel
 from itertools import zip_longest
 import heapq
@@ -50,7 +50,7 @@ class OrderBook:
 
             while current_order is not None:
                 lines_bids.append(
-                    f"{current_order.qty} @ {price}"
+                    f"{current_order.qty} @ {format_price(price)}"
                 )
 
                 current_order = current_order.next_order
@@ -62,7 +62,7 @@ class OrderBook:
             while current_order is not None:
 
                 lines_offers.append(
-                    f"{current_order.qty} @ {price}"
+                    f"{current_order.qty} @ {format_price(price)}"
                 )
 
                 current_order = current_order.next_order
@@ -162,14 +162,14 @@ if __name__ == "__main__":
         side=Side.BUY,
         order_type=OrderType.LIMIT,
         qty=300,
-        price=Decimal("10.10")
+        price=Decimal("10.000000")
     )
 
     buy_2 = Order(
         side=Side.BUY,
         order_type=OrderType.LIMIT,
         qty=300,
-        price=Decimal("10.10")
+        price=Decimal("10")
     )
 
     buy_3 = Order(
