@@ -324,6 +324,7 @@ def test_cancel_removes_order_from_book():
 
 def test_cancel_middle_of_queue():
     eng = MatchingEngine()
+
     eng.submit_limit(Side.BUY, Decimal("10"), 100)
     eng.submit_limit(Side.BUY, Decimal("10"), 200)
     eng.submit_limit(Side.BUY, Decimal("10"), 50)
@@ -339,4 +340,17 @@ def test_cancel_middle_of_queue():
     assert last.previous_order is first
     assert last.next_order is None
     assert level.total_qty == 150
+
+def test_cancel_keeps_level_when_not_empty():
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+
+    oid = next(iter(eng.book.orders))
+    eng.cancel(oid)
+
+    assert eng.book.bids[Decimal("10")] is not None
+    assert eng.book.best_price(Side.BUY) == Decimal("10")
+    assert eng.book.bids[Decimal("10")].total_qty == 200
     
