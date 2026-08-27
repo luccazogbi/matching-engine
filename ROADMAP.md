@@ -65,11 +65,11 @@ Estrutura do projeto e início do histórico de versionamento.
 
 **Estudar antes:** comandos básicos de Git; convenções de mensagem de commit; `.gitignore`.
 
-- [ ] Criar o repositório no GitHub e vinculá-lo à pasta local
-- [ ] Definir a estrutura de diretórios, separando código-fonte e testes
-- [ ] Adicionar `.gitignore`
-- [ ] Criar o `README.md` inicial
-- [ ] Registrar o primeiro commit
+- [x] Criar o repositório no GitHub e vinculá-lo à pasta local
+- [x] Definir a estrutura de diretórios, separando código-fonte e testes
+- [x] Adicionar `.gitignore`
+- [x] Criar o `README.md` inicial
+- [x] Registrar o primeiro commit
 
 **Pronto quando:** `git log` mostra ao menos um commit, `git status` está limpo, o repositório abre no GitHub exibindo o README, e `git ls-files` não lista nenhum artefato de execução.
 
@@ -83,10 +83,10 @@ arredondamento em ponto flutuante e alternativas (*Guia §13*); contadores monot
 
 **Ferramentas:** `dataclasses.dataclass` · `enum.Enum` · `itertools.count` · `decimal.Decimal` — *Guia §8*.
 
-- [ ] Definir a entidade que representa uma ordem
-- [ ] Definir os tipos enumerados para lado e tipo de ordem
-- [ ] Fixar a representação do preço — decisão estrutural, cara de reverter
-- [ ] Estabelecer o gerador de identificadores e o contador de ordem de chegada
+- [x] Definir a entidade que representa uma ordem
+- [x] Definir os tipos enumerados para lado e tipo de ordem
+- [x] Fixar a representação do preço — decisão estrutural, cara de reverter
+- [x] Estabelecer o gerador de identificadores e o contador de ordem de chegada
 
 **Pronto quando:** é possível criar duas ordens ao mesmo preço e determinar, pelo número de sequência, qual chegou primeiro. Na representação de preço adotada, somar 0,10 e 0,20 e comparar com 0,30 devolve verdadeiro.
 
@@ -97,12 +97,12 @@ Estrutura que sustenta a prioridade temporal, com remoção em tempo constante.
 **Estudar antes:** nós; listas simplesmente e duplamente encadeadas; referências em Python;
 fila FIFO; por que `list.pop(0)` é O(N); nós-sentinela — *Guia §6*.
 
-- [ ] Implementar a fila duplamente encadeada, com cabeça e cauda
-- [ ] Implementar inserção na cauda
-- [ ] Implementar remoção da cabeça
-- [ ] Implementar remoção de nó arbitrário, sem percorrer a fila
-- [ ] Manter a quantidade agregada do nível atualizada
-- [ ] Testar remoção na cabeça, no meio e na cauda
+- [x] Implementar a fila duplamente encadeada, com cabeça e cauda
+- [x] Implementar inserção na cauda
+- [x] Implementar remoção da cabeça
+- [x] Implementar remoção de nó arbitrário, sem percorrer a fila
+- [x] Manter a quantidade agregada do nível atualizada
+- [x] Testar remoção na cabeça, no meio e na cauda
 
 **Pronto quando:** numa fila de três ordens, remover a do meio mantém as outras duas corretamente ligadas e a quantidade agregada igual à soma das restantes — sem que o método percorra a fila.
 
@@ -115,12 +115,12 @@ fila FIFO; por que `list.pop(0)` é O(N); nós-sentinela — *Guia §6*.
 
 **Ferramentas:** `dict` · `heapq.heappush` · `heapq.heappop` · `sortedcontainers.SortedDict` (alternativa) — *Guia §8*.
 
-- [ ] Implementar o índice de preço para nível, por lado
-- [ ] Implementar o índice de identificador para ordem
-- [ ] Implementar a estrutura de ranking de preços, por lado
-- [ ] Implementar as consultas de melhor preço de compra e de venda
-- [ ] Implementar criação e remoção automática de níveis vazios
-- [ ] Testar os invariantes de consistência
+- [x] Implementar o índice de preço para nível, por lado
+- [x] Implementar o índice de identificador para ordem
+- [x] Implementar a estrutura de ranking de preços, por lado
+- [x] Implementar as consultas de melhor preço de compra e de venda
+- [x] Implementar criação e remoção automática de níveis vazios
+- [x] Testar os invariantes de consistência
 
 **Pronto quando:** inserindo compras a 10, 9,99 e 9,98 em ordem arbitrária, a consulta de melhor compra devolve 10; esvaziado um nível, ele deixa de existir e o melhor preço passa ao seguinte.
 
@@ -131,9 +131,9 @@ Atende ao requisito A1 e serve de instrumento de depuração para todas as etapa
 **Estudar antes:** formatação e alinhamento de cadeias de caracteres; exibição por ordem
 individual em vez de nível agregado (*Guia §10*).
 
-- [ ] Implementar a apresentação em duas colunas
-- [ ] Exibir cada ordem individualmente, preservando a fila
-- [ ] Verificar contra o livro hipotético do requisito adicional 4
+- [x] Implementar a apresentação em duas colunas
+- [x] Exibir cada ordem individualmente, preservando a fila
+- [x] Verificar contra o livro hipotético do requisito adicional 4
 
 **Pronto quando:** o livro do requisito adicional 4 é exibido com as compras em ordem decrescente de preço e as vendas em ordem crescente, uma linha por ordem.
 
@@ -295,3 +295,38 @@ anteriores. Havendo atraso, é a que deve ser preservada: trata-se de requisito 
 
 Os testes das tarefas 3 e 4 são escritos junto com o código. A tarefa 13 consolida e amplia,
 não inaugura.
+
+## Justificativas
+* Uso de listas duplamente encadeadas: A inserção ou remoção de um elemento na lista não implica a mudança de lugar de outros elementos. Logo, temos um nível de complexidade O(1).
+
+## Conceitos
+* `Enum` : serve para criar um ***conjunto fechado de valores válidos***. Como no nosso projeto, as ordens só podem ser *buy* ou *sell*, vamos utilizar desse recurso para facilitar a definição das ordens que serão uma classe. 
+	* `@property`: É um decorador que transforma um método em **acesso de atributo** — você escreve `side.opposite` em vez de `side.opposite()`.
+
+## Commits
+
+`tipo: descrição curta`
+
+Os tipos mais úteis para esse projeto são:
+
+- `feat:` nova funcionalidade  
+    Ex.: `feat: add order domain model`
+- `fix:` correção de bug  
+    Ex.: `fix: correct order removal from price level`
+- `test:` criação ou alteração de testes  
+    Ex.: `test: add price level removal tests`
+- `docs:` documentação  
+    Ex.: `docs: update project architecture section`
+- `refactor:` reorganização do código sem alterar o comportamento  
+    Ex.: `refactor: simplify price level removal logic`
+- `chore:` organização, configuração ou manutenção do projeto  
+    Ex.: `chore: organize project into src and tests directories`
+- `style:` mudanças de formatação sem alterar a lógica  
+    Ex.: `style: format order module`
+- `perf:` melhoria de desempenho  
+    Ex.: `perf: optimize best price lookup`
+- `build:` alterações relacionadas a dependências ou empacotamento  
+    Ex.: `build: add pytest dependency`
+- `ci:` mudanças em integração contínua  
+    Ex.: `ci: add automated test workflow`
+
