@@ -307,4 +307,18 @@ def test_problem_statement_sequence():
     assert engine.book.offers == {}
     assert engine.book.bids == {}
     assert engine.book.orders == {}
-        
+
+# ---------------------------------------------- Order cancellation ---------------------------------------------- #
+
+def test_cancel_removes_order_from_book():
+    eng = MatchingEngine()
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    oid = next(iter(eng.book.orders)) # iter(eng.book.order) create an iterator before the first element, so that's why we apply next()
+
+    eng.cancel(oid)
+
+    assert eng.book.best_price(Side.BUY) is None # It's taking from the eng.book.bid_prices
+    assert len(eng.book.orders) == 0
+    assert Decimal("10") not in eng.book.bids
+    assert eng.book.bid_prices == []
+

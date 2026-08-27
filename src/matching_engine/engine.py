@@ -111,5 +111,19 @@ class MatchingEngine:
         order_id: int
     ):
 
-        order_tb_removed = self.book.orders[order_id]
-        
+        # Important thign: The order is removed from the PriceLevel, book.bids/book.offers, but not from book.bid_prices or book.offer_prices. This
+        # occurs because of lazy deletion and that's ok.
+        order_to_remove = self.book.orders.get(order_id) # Is's returning the Order object with "order_id"
+
+        # If It's None, there's no order. In the other case, there's and we need to take out from orders after removing it 
+        if order_to_remove is None:
+            return None
+
+        level = self.book.levels_for(order_to_remove.side)[order_to_remove.price] # Taking the PriceLevel of the order to be removed 
+        level.remove_order(order_to_remove)
+        del self.book.orders[order_to_remove.order_id] # Removing from the dict responsible for store order with its IDs
+
+        if level.first is None:
+            self.book.remove_empty_level(order_to_remove.side, order_to_remove.price)
+
+        return order_to_remove
