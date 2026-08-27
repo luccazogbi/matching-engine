@@ -70,3 +70,27 @@ def test_submit_limit_without_match():
 
     assert engine.book.best_price(Side.BUY) == Decimal("10")
     assert len(engine.book.orders) == 1
+
+def test_submit_limit_partial_match():
+    engine = MatchingEngine()
+
+    engine.submit_limit(
+        Side.SELL,
+        Decimal("10"),
+        200
+    )
+
+    trades = engine.submit_limit(
+        Side.BUY,
+        Decimal("10"),
+        100
+    )
+
+    assert [str(t) for t in trades] == [
+        "Trade, price: 10, qty: 100"
+    ]
+
+    level = engine.book.offers[Decimal("10")]
+
+    assert level.total_qty == 100
+    assert level.first.qty == 100
