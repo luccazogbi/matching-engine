@@ -120,3 +120,24 @@ def test_submit_limit_aggressive_order_rests_remaining_qty():
 
     assert engine.book.best_price(Side.BUY) == Decimal("10")
     assert engine.book.bids[Decimal("10")].total_qty == 100
+
+
+def test_submit_limit_respects_fifo():
+    engine = MatchingEngine()
+
+    engine.submit_limit(Side.SELL, Decimal("10"), 100)
+    engine.submit_limit(Side.SELL, Decimal("10"), 200)
+
+    trades = engine.submit_limit(
+        Side.BUY,
+        Decimal("10"),
+        150
+    )
+
+    assert [str(t) for t in trades] == [
+        "Trade, price: 10, qty: 150"
+    ]
+
+    level = engine.book.offers[Decimal("10")]
+
+    assert level.first.qty == 150
