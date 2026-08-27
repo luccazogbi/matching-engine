@@ -168,4 +168,19 @@ def test_limit_sweeps_multiple_levels():
 
     assert engine.book.best_price(Side.BUY) == Decimal("25")
 
-def test_limit_price_improvement
+def test_limit_order_matching_passive_price():
+
+    engine = MatchingEngine()
+
+    engine.submit_limit(Side.SELL, Decimal("20"), 100)
+
+    trades = engine.submit_limit(
+        Side.BUY,
+        Decimal("25"),
+        100
+    )
+
+    assert [str(t) for t in trades] == [
+                "Trade, price: 20, qty: 100"
+        ]
+    
