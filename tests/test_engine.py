@@ -455,7 +455,7 @@ def test_modify_renews_seq_on_priority_loss():
     eng.submit_limit(Side.BUY, Decimal("10"), 200)
 
     id = eng.book.bids[Decimal("10")].first.order_id
-    seq = eng.book.bids[Decimal("10")].first.order_id
+    seq = eng.book.bids[Decimal("10")].first.seq
 
     eng.modify(id, new_qty=300)
 
@@ -478,5 +478,153 @@ def test_modify_qty_increase_moves_to_tail():
     assert eng.book.bids[Decimal("10")].first.qty == 200
     assert eng.book.bids[Decimal("10")].last.qty == 300
     assert eng.book.bids[Decimal("10")].total_qty == 500
+
+    assert_book_invariants(eng)
+
+# ------------------------------------------ > Future review
+def test_modify_qty_decrease_keeps_position():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+
+    order_id = eng.book.bids[Decimal("10")].first.order_id
+    seq_before = eng.book.bids[Decimal("10")].first.seq
+
+    assert eng.modify(order_id, new_qty=50) == []
+
+    # Reducing does not harm anyone behind, so the order keeps its place and its sequence.
+    assert eng.book.bids[Decimal("10")].first.order_id == order_id
+    assert eng.book.bids[Decimal("10")].first.seq == seq_before
+    assert eng.book.bids[Decimal("10")].first.qty == 50
+    assert eng.book.bids[Decimal("10")].total_qty == 250
+
+    assert_book_invariants(eng)
+
+def test_modify_crossing_price_executes():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    eng.submit_limit(Side.SELL, Decimal("10.5"), 100)
+
+    order_id = eng.book.bids[Decimal("10")].first.order_id
+
+    # Raising the bid above the best offer makes the order marketable (D08).
+    trades = eng.modify(order_id, new_price=Decimal("10.6"))
+
+    assert [str(t) for t in trades] == ["Trade, price: 10.5, qty: 100"]
+    assert eng.book.best_price(Side.BUY) is None
+    assert eng.book.best_price(Side.SELL) is None
+    assert eng.book.orders == {}
+
+    assert_book_invariants(eng)
+
+def test_modify_empties_old_level():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    order_id = eng.book.bids[Decimal("10")].first.order_id
+
+    eng.modify(order_id, new_price=Decimal("9"))
+
+    assert Decimal("10") not in eng.book.bids
+    assert Decimal("9") in eng.book.bids
+    assert eng.book.bids[Decimal("9")].total_qty == 100
+
+    assert_book_invariants(eng)
+
+def test_modify_to_zero_cancels():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    eng.submit_limit(Side.BUY, Decimal("9.99"), 200)
+
+    order_id = eng.book.bids[Decimal("10")].first.order_id
+
+    # D10: asking for zero quantity says the order is no longer wanted.
+    assert eng.modify(order_id, new_qty=0) == []
+
+    assert order_id not in eng.book.orders
+    assert Decimal("10") not in eng.book.bids
+    assert eng.book.bids[Decimal("9.99")].total_qty == 200
+
+    assert_book_invariants(eng)
+
+def test_modify_to_zero_with_new_price_cancels():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    eng.submit_limit(Side.BUY, Decimal("9.99"), 200)
+
+    order_id = eng.book.bids[Decimal("10")].first.order_id
+
+    assert eng.modify(order_id, new_price=Decimal("9"), new_qty=0) == []
+
+    assert order_id not in eng.book.orders
+    assert Decimal("10") not in eng.book.bids
+
+    # The price is ignored because there is no order left to reprice: no ghost level.
+    assert Decimal("9") not in eng.book.bids
+
+    assert_book_invariants(eng)
+
+def test_modify_unknown_id_returns_none():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+
+    # None means "no such order", as opposed to [] which would mean "no trades".
+    assert eng.modify(9999, new_qty=50) is None
+
+    assert eng.book.bids[Decimal("10")].total_qty == 100
+
+    assert_book_invariants(eng)
+
+def test_modify_without_terms_raises():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    order_id = eng.book.bids[Decimal("10")].first.order_id
+
+    with pytest.raises(ValueError):
+        eng.modify(order_id)
+
+    assert_book_invariants(eng)
+
+@pytest.mark.parametrize("invalid_price", ["0", "-3"])
+def test_modify_rejects_invalid_price(invalid_price):
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    order_id = eng.book.bids[Decimal("10")].first.order_id
+
+    with pytest.raises(ValueError):
+        eng.modify(order_id, new_price=Decimal(invalid_price))
+
+    # A rejected modification must leave the book exactly as it was.
+    assert eng.book.bids[Decimal("10")].total_qty == 100
+    assert order_id in eng.book.orders
+
+    assert_book_invariants(eng)
+
+def test_modify_rejects_negative_qty():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    order_id = eng.book.bids[Decimal("10")].first.order_id
+
+    with pytest.raises(ValueError):
+        eng.modify(order_id, new_qty=-5)
+
+    assert eng.book.bids[Decimal("10")].total_qty == 100
 
     assert_book_invariants(eng)
