@@ -237,7 +237,10 @@ Exposição das funcionalidades por comandos textuais.
 apresentação e lógica de negócio — *Guia §13*.
 
 - [ ] Implementar o laço de leitura e o analisador de comandos
-- [ ] Mapear cada comando ao método correspondente da engine
+- [ ] Suportar os seis comandos: `limit`, `market`, `peg`, `cancel order`, alteração e `print book`
+- [ ] Emitir `Order created: <side> <qty> @ <price> <id>` ao aceitar uma ordem
+- [ ] Emitir `Order cancelled` ao cancelar
+- [ ] Formatar todo preço exibido com `format_price`
 - [ ] Tratar entradas malformadas sem interromper a execução
 - [ ] Assegurar que a engine permaneça independente da interface
 

@@ -127,3 +127,31 @@ class MatchingEngine:
             self.book.remove_empty_level(order_to_remove.side, order_to_remove.price)
 
         return order_to_remove
+
+    def modify(self,
+        order_id: int,
+        new_price=None | Decimal,
+        new_qty=None | int
+    ):
+        
+        # Below we're getting the order to modify and removing from its level (deleting its initial level next). 
+        order_to_mod = self.book.orders.get(order_id)
+        self.book.levels_for(order_to_mod.side)[order_to_mod.price].remove_order(order_to_mod) # Remove from the PriceLevel, but doesn't cancel the order
+        self.book.remove_empty_level(order_to_mod.side, order_to_mod.price)
+
+        # Putting inside another level. Its price is updated, id maintained.  
+        order_to_mod.price = new_price
+        order_to_mod.qty = new_qty
+        trades_after_changing = self._match(order_to_mod) # Verifies if when changing the level, it could be possible to match another order.
+
+        # With this, it creates a level if it wasn't any match
+        if order_to_mod.qty > 0:
+
+            level_after_matching = self.book.get_or_create_level(order_to_mod.side, order_to_mod.price)
+            level_after_matching.last_insert(order_to_mod)
+
+        else:
+
+            del self.book.orders[order_id]
+
+        

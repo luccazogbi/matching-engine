@@ -19,7 +19,7 @@ import heapq
 
 class OrderBook:
     def __init__(self):
-        self.bids = {} # Key: price | Value: PriceLevel (BUY)
+        self.bids = {} # Key: price | Value: PriceLevel (BUY) | It stores each side level of the OrderBook
         self.offers = {} # Key: price | Value: PriceLevel (SELL)
 
         self.orders = {}  # Key: order_id | Value: Order (average O(1) lookup) 
@@ -169,7 +169,7 @@ if __name__ == "__main__":
         side=Side.BUY,
         order_type=OrderType.LIMIT,
         qty=300,
-        price=Decimal("10")
+        price=Decimal("10.10")
     )
 
     buy_3 = Order(
