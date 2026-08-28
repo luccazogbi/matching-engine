@@ -219,12 +219,13 @@ Atende ao requisito A5. É a etapa de maior complexidade conceitual.
 repreçagem síncrona; risco de cascata; a tensão entre os requisitos adicionais 4 e 5 —
 *Guia §11*.
 
-- [ ] Implementar o registro das ordens *pegged* por lado e referência
-- [ ] Implementar o cálculo da referência, excluindo as próprias ordens *pegged*
+- [ ] Implementar `reference_price`, excluindo as próprias ordens *pegged*
+- [ ] Implementar `insert_by_seq` no `PriceLevel`
+- [ ] Implementar `submit_pegged`, com o registro das *pegged* vivas
 - [ ] Implementar o gatilho de repreçagem ao fim de toda operação que altere o topo
+- [ ] Rejeitar peg cuja referência contradiz o lado
 - [ ] Definir e documentar o comportamento sem preço de referência disponível
-- [ ] Definir e documentar o comportamento de ordem *pegged* que resultaria em cruzamento
-- [ ] Definir e documentar a regra de prioridade na repreçagem
+- [ ] Documentar a preservação do `seq` na repreçagem
 - [ ] Reproduzir a sequência do requisito adicional 5
 
 **Pronto quando:** a sequência do requisito adicional 5 é reproduzida integralmente, inclusive com a ordem *pegged* posicionada à frente da *limit* de 300 no nível de 10,1. Cancelada a ordem que define o *bid*, a *pegged* acompanha o novo melhor preço.
