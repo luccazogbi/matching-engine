@@ -4,6 +4,49 @@ from matching_engine.price_level import PriceLevel
 from matching_engine.order import Side, OrderType, Order
 import pytest
 
+def assert_book_invariants(engine):
+    """Structural checks that must hold after any operation, whatever it was.
+
+    Called at the end of each test so that a bug in one operation is caught by every test
+    that exercises it, not only by the test written for that operation.
+    """
+    book = engine.book
+
+    # 1. The book is never crossed: the best bid must sit strictly below the best offer.
+    best_bid = book.best_price(Side.BUY)
+    best_offer = book.best_price(Side.SELL)
+
+    if best_bid is not None and best_offer is not None:
+        assert best_bid < best_offer, (
+            f"crossed book: best bid {best_bid} is not below best offer {best_offer}"
+        )
+
+    for side in (Side.BUY, Side.SELL):
+        for price, level in book.levels_for(side).items(): # visiting every level of "side". As it's inside for side in (Side.BUY, Side.SELL), it'll
+            # visit every level of both sides
+
+            # It'll cross every order inside a level and stop when it reaches None. It's storing order objects inside queued
+            queued = []
+            current = level.first
+            while current is not None:
+                queued.append(current)
+                current = current.next_order
+
+            # 2. A level that lost its last order must have been removed from the book (An empty list is False)
+            assert queued, f"empty level left behind at {price} on the {side.value} side"
+
+            # 3. The aggregate must agree with the queue it summarises.
+            queue_total = sum(order.qty for order in queued)
+            assert level.total_qty == queue_total, (
+                f"level {price}: total_qty is {level.total_qty}, queue sums to {queue_total}"
+            )
+
+            # 4. Position in the queue must agree with arrival order.
+            sequences = [order.seq for order in queued]
+            assert sequences == sorted(sequences), (
+                f"level {price}: queue order disagrees with arrival order, seqs are {sequences}"
+            )
+
 @pytest.mark.parametrize("price, qty, expected", [
     ("20", 150, "Trade, price: 20, qty: 150"),
     ("20.00", 150, "Trade, price: 20, qty: 150"),
@@ -383,48 +426,6 @@ def test_cancelled_order_does_not_match():
         
 # ---------------------------------------------- Order modification ---------------------------------------------- #
 
-def assert_book_invariants(engine):
-    """Structural checks that must hold after any operation, whatever it was.
-
-    Called at the end of each test so that a bug in one operation is caught by every test
-    that exercises it, not only by the test written for that operation.
-    """
-    book = engine.book
-
-    # 1. The book is never crossed: the best bid must sit strictly below the best offer.
-    best_bid = book.best_price(Side.BUY)
-    best_offer = book.best_price(Side.SELL)
-
-    if best_bid is not None and best_offer is not None:
-        assert best_bid < best_offer, (
-            f"crossed book: best bid {best_bid} is not below best offer {best_offer}"
-        )
-
-    for side in (Side.BUY, Side.SELL):
-        for price, level in book.levels_for(side).items():
-
-            queued = []
-            current = level.first
-
-            while current is not None:
-                queued.append(current)
-                current = current.next_order
-
-            # 2. A level that lost its last order must have been removed from the book.
-            assert queued, f"empty level left behind at {price} on the {side.value} side"
-
-            # 3. The aggregate must agree with the queue it summarises.
-            queue_total = sum(order.qty for order in queued)
-            assert level.total_qty == queue_total, (
-                f"level {price}: total_qty is {level.total_qty}, queue sums to {queue_total}"
-            )
-
-            # 4. Position in the queue must agree with arrival order.
-            sequences = [order.seq for order in queued]
-            assert sequences == sorted(sequences), (
-                f"level {price}: queue order disagrees with arrival order, seqs are {sequences}"
-            )
-
 def test_modify_price_reprices_and_loses_priority():
 
     eng = MatchingEngine()
@@ -443,3 +444,7 @@ def test_modify_price_reprices_and_loses_priority():
     "100 @ 9.99           | 100 @ 10.5",
     "200 @ 9.98           |",
     ]
+
+    assert_book_invariants(eng)
+
+test_modify_renews_seq_on_priority_loss
