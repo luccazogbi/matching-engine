@@ -144,3 +144,12 @@ class PriceLevel:
         
         else:
             return None
+
+    # Preserves the position, only for reduction
+    def adjust_qty(self,
+        order: Order,
+        new_qty: int 
+    ):
+        self.total_qty -= order.qty
+        order.qty = new_qty
+        self.total_qty += order.qty

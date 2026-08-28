@@ -51,12 +51,43 @@ class Order:
     next_order: Order | None = None
 
     def __post_init__(self):
+        validate_order_terms(self.order_type, self.price, self.qty)
         self.order_id = next(_id_counter)
         self.seq = next(_seq_counter)
+
+    def renew_seq(self):
+        self.seq = next(_seq_counter)
+
+def  validate_order_terms(
+    order_type: OrderType,
+    price: Decimal | None,
+    qty: int,
+) -> None:
+
+    """Enforce the two invariants every order must satisfy, wherever it comes from.
+
+    Called from Order.__post_init__, which covers every creation path, and from
+    MatchingEngine.modify, which is the only operation that changes these values after
+    the order already exists.
+    """
+
+    if qty <= 0:
+        raise ValueError(f"quantity must be positive, got {qty}")
+
+    if order_type is OrderType.LIMIT:
+        if price is None:
+            raise ValueError("a limit order requires a price")
+
+        if price <= 0:
+            raise ValueError(f"a limit order price must be positive, got {price}")
+
+    elif order_type is OrderType.MARKET and price is not None:
+        raise ValueError("a market order must not carry a price")
 
 
 def format_price(price: Decimal) -> str:
     return f"{price.normalize():f}"
+
 
 # Good approach to implement in each module, because it executes a code block only when this file is executed directly
 if __name__ == "__main__": 
