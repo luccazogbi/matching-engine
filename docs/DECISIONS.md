@@ -286,6 +286,88 @@ Accepted.
 
 ---
 
+## D09 — Unfilled quantity of a market order
+
+### Decision
+
+The quantity of a market order that cannot be executed for lack of liquidity is **discarded**. It
+never rests in the book.
+
+### Motivation
+
+A resting order must sit at a price level, and a market order has no price — there is no level to
+put it in.
+
+The statement fixes this behaviour by example. Starting from a book whose sell side holds only 150
+shares:
+
+```text
+>>> market buy 200
+Trade, price: 20, qty: 150
+>>> market sell 200
+Trade, price: 10, qty: 100
+```
+
+The buy consumed 150 and 50 remained unexecuted. The following sell traded against the original
+resting bid of 100 @ 10 — untouched. Had the 50 rested as a buy order, that sell would have found
+it too, and the output would differ.
+
+This behaviour is known in market terminology as **IOC** (*immediate or cancel*): execute whatever
+is available at once, cancel the rest.
+
+### Status
+
+Accepted.
+
+---
+
+## D10 — Order modification semantics
+
+### Decision
+
+Modification is implemented as **detach, change, reinsert** on the same `Order` object, under four
+rules:
+
+| Aspect | Rule |
+|---|---|
+| Identifier | **preserved** — the modified order keeps its `order_id` |
+| Price change | loses priority: reinserted at the **tail** of the destination level |
+| Quantity increase | loses priority: reinserted at the tail of the same level |
+| Quantity decrease | **keeps** priority: adjusted in place, without leaving the queue |
+| Arrival sequence | `seq` is renewed whenever priority is lost, kept when it is not |
+| Quantity set to zero | treated as a **cancellation** |
+
+### Motivation
+
+**Identifier preserved.** The order object is never recreated — it is detached from one level and
+reinserted into another, so the identifier travels with it. This is also the only workable choice:
+the statement specifies no output for a modification, so a new identifier could not be communicated,
+and the order would become impossible to cancel afterwards.
+
+**Priority rules.** The statement requires that a price change reposition the order in the
+appropriate price range, noting that it *"loses priority in the queue"*. The rule for quantity is
+not specified; the market convention was adopted — increasing the requested quantity asks for more
+than the queue position reserved, so it goes to the back, while reducing it harms nobody behind and
+therefore keeps the position.
+
+**Arrival sequence.** `seq` records time priority, which is otherwise encoded only by position in
+the level's linked list. If an order moved to the tail while keeping an old, low `seq`, position and
+sequence would disagree and the invariant *"queue order equals `seq` order"* would no longer hold —
+removing the only field able to verify priority independently of the structure that implements it.
+So `seq` is renewed exactly when the order is reinserted at a tail.
+
+**Quantity zero.** Setting the quantity to zero states that the order is no longer wanted, which is
+a cancellation. Leaving it in the book would put an order of zero shares in the queue: it would
+appear in the book display, occupy a position, and be silently consumed on the next attempt to match
+against that level. Negative quantities are invalid input and are rejected rather than cancelled —
+zero is an instruction, a negative number is an error.
+
+### Status
+
+Accepted.
+
+---
+
 # Future Decisions
 
 As new implementation decisions are made, they should be documented using the structure below.

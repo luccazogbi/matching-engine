@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 from .order_book import OrderBook
-from .order import Side, Order, OrderType, format_price
+from .order import Side, Order, OrderType, format_price, validate_order_terms
 from .price_level import PriceLevel
 
 
@@ -107,6 +107,19 @@ class MatchingEngine:
 
         return list_trades
 
+    # Method to detach the order of a level without destroying it
+    def _detach(self,
+         order: Order
+    ):
+
+        level = self.book.levels_for(order.side)[order.price]
+        level.remove_order(order)
+
+        if level.first is None:
+            self.book.remove_empty_level(order.side, order.price)
+
+        return level
+        
     def cancel(self, 
         order_id: int
     ):
@@ -119,39 +132,84 @@ class MatchingEngine:
         if order_to_remove is None:
             return None
 
-        level = self.book.levels_for(order_to_remove.side)[order_to_remove.price] # Taking the PriceLevel of the order to be removed 
-        level.remove_order(order_to_remove)
+        self._detach(order_to_remove)
         del self.book.orders[order_to_remove.order_id] # Removing from the dict responsible for store order with its IDs
-
-        if level.first is None:
-            self.book.remove_empty_level(order_to_remove.side, order_to_remove.price)
 
         return order_to_remove
 
     def modify(self,
         order_id: int,
-        new_price=None | Decimal,
-        new_qty=None | int
-    ):
-        
-        # Below we're getting the order to modify and removing from its level (deleting its initial level next). 
+        new_price: Decimal | None = None,
+        new_qty: int | None = None
+    ) -> list[Trade] | None:
+
         order_to_mod = self.book.orders.get(order_id)
-        self.book.levels_for(order_to_mod.side)[order_to_mod.price].remove_order(order_to_mod) # Remove from the PriceLevel, but doesn't cancel the order
-        self.book.remove_empty_level(order_to_mod.side, order_to_mod.price)
 
-        # Putting inside another level. Its price is updated, id maintained.  
-        order_to_mod.price = new_price
-        order_to_mod.qty = new_qty
-        trades_after_changing = self._match(order_to_mod) # Verifies if when changing the level, it could be possible to match another order.
+        if order_to_mod is None:
+            return None
 
-        # With this, it creates a level if it wasn't any match
-        if order_to_mod.qty > 0:
+        if new_price is None and new_qty is None:
+            raise ValueError("nothing to modify: provide a price, a quantity, or both")
 
-            level_after_matching = self.book.get_or_create_level(order_to_mod.side, order_to_mod.price)
-            level_after_matching.last_insert(order_to_mod)
+        # In the verification below, it doens't matter what is the new_price. If the new_qty is 0, it'll 
+        # cancel the order with order_id. Don't know if it's correct from the advisor view, but I though 
+        # about poiting an error because a modify() method with valid order_id, new_price being different 
+        # from the original price, and a new_qty equals to zero, it's strange. In my point, it's like 
+        # asking to create an order in the new price and after this, delete it. So I put in the way below:
+        if new_qty == 0:
+            self.cancel(order_id)
+            return []
 
-        else:
+        # Kind of 
+        validate_order_terms(
+            order_to_mod.order_type,
+            new_price if new_price is not None else order_to_mod.price,
+            new_qty if new_qty is not None else order_to_mod.qty,
+        )
 
-            del self.book.orders[order_id]
+        # Stays in the same price level
+        if new_price is None:
+
+            if new_qty < order_to_mod.qty:
+                self.book.levels_for(order_to_mod.side)[order_to_mod.price].adjust_qty(order_to_mod, new_qty)
+                return []
+
+            elif new_qty > order_to_mod.qty: # new_qty is greater than old_qty
+                self._detach(order_to_mod)
+                order_to_mod.qty = new_qty
+                level = self.book.get_or_create_level(order_to_mod.side, order_to_mod.price)
+                order_to_mod.renew_seq()
+                level.last_insert(order_to_mod)
+                return []
+
+            elif new_qty == order_to_mod.qty:
+                return []
+
+        # Going to another price level
+        else: 
+
+            # Remove order from initial level (returns the level, but it's not gonna to be used here) 
+            self._detach(order_to_mod) 
+
+            # Putting inside another level. Its price is updated, id maintained.  
+            order_to_mod.price = new_price
+
+            if new_qty is not None:
+                order_to_mod.qty = new_qty
+
+            trades_after_changing = self._match(order_to_mod) # Verifies if when changing the level, it could be possible to match another order.
+
+            # With this, it creates a level if it wasn't any match
+            if order_to_mod.qty > 0:
+
+                level_after_matching = self.book.get_or_create_level(order_to_mod.side, order_to_mod.price)
+                order_to_mod.renew_seq()
+                level_after_matching.last_insert(order_to_mod)
+
+            else:
+
+                del self.book.orders[order_id]
+
+        return trades_after_changing 
 
         
