@@ -169,23 +169,22 @@ def test_best_price_dispatches_to_correct_side():
     assert ob.best_price(Side.BUY) == Decimal("10.00")
     assert ob.best_price(Side.SELL) == Decimal("10.50")
 
-def test_finding_unpegged_order():
+# ------------------------------------------- Peg orders (reference_price method) ------------------------------------------- #
+# Future Review
 
-    ob = OrderBook()
+def make_order(side, price, qty, peg_reference=None):
+    """Build a resting order directly, without going through the engine.
 
-    pegged = Order(
-        side=Side.BUY,
+    The book stores orders but never creates them, so a test that needs a level holding only
+    pegged orders — a state submit_limit cannot produce — has to assemble it by hand.
+    """
+    return Order(
+        side=side,
         order_type=OrderType.LIMIT,
-        qty=150,
-        price=Decimal("10"),
-        peg_reference=PegReference.BID,
+        qty=qty,
+        price=price,
+        peg_reference=peg_reference,
     )
-
-    ob.get_or_create_level(Side.BUY, Decimal("10")).last_insert(pegged)
-
-    unpegged_price = ob.reference_price(peg_reference=PegReference.BID)
-
-    assert unpegged_price is None
 
 def test_reference_price_matches_best_price_without_pegged():
 
@@ -205,4 +204,83 @@ def test_reference_price_matches_best_price_without_pegged():
     assert ob.best_price(Side.BUY) == Decimal("10")
     assert unpegged_price == Decimal("10")
 
+def test_reference_price_picks_the_best_of_several_levels():
+    ob = OrderBook()
 
+    ob.get_or_create_level(Side.BUY, Decimal("10")).last_insert(
+        make_order(Side.BUY, Decimal("10"), 200)
+    )
+    ob.get_or_create_level(Side.BUY, Decimal("9.99")).last_insert(
+        make_order(Side.BUY, Decimal("9.99"), 100)
+    )
+
+    assert ob.reference_price(PegReference.BID) == Decimal("10")
+    assert ob.reference_price(PegReference.BID) == ob.best_price(Side.BUY)
+
+def test_reference_price_returns_none_on_empty_side():
+    ob = OrderBook()
+
+    assert ob.reference_price(PegReference.BID) is None
+    assert ob.reference_price(PegReference.OFFER) is None
+
+def test_reference_price_skips_level_with_only_pegged():
+    ob = OrderBook()
+
+    ob.get_or_create_level(Side.BUY, Decimal("9.99")).last_insert(
+        make_order(Side.BUY, Decimal("9.99"), 100)
+    )
+    ob.get_or_create_level(Side.BUY, Decimal("10")).last_insert(
+        make_order(Side.BUY, Decimal("10"), 150, PegReference.BID)
+    )
+
+    # The two disagree, and that disagreement is the whole reason reference_price exists.
+    assert ob.best_price(Side.BUY) == Decimal("10")
+    assert ob.reference_price(PegReference.BID) == Decimal("9.99")
+
+def test_reference_price_accepts_mixed_level():
+    ob = OrderBook()
+
+    level = ob.get_or_create_level(Side.BUY, Decimal("10"))
+    level.last_insert(make_order(Side.BUY, Decimal("10"), 200))
+    level.last_insert(make_order(Side.BUY, Decimal("10"), 150, PegReference.BID))
+
+    # One non-pegged order is enough to make the level usable as a reference.
+    assert ob.reference_price(PegReference.BID) == Decimal("10")
+
+def test_reference_price_returns_none_when_only_pegged():
+    ob = OrderBook()
+
+    ob.get_or_create_level(Side.BUY, Decimal("10")).last_insert(
+        make_order(Side.BUY, Decimal("10"), 150, PegReference.BID)
+    )
+
+    # A pegged order alone on the side cannot serve as its own reference.
+    assert ob.best_price(Side.BUY) == Decimal("10")
+    assert ob.reference_price(PegReference.BID) is None
+
+def test_reference_price_offer_side():
+    ob = OrderBook()
+
+    ob.get_or_create_level(Side.BUY, Decimal("10")).last_insert(
+        make_order(Side.BUY, Decimal("10"), 200)
+    )
+    ob.get_or_create_level(Side.SELL, Decimal("10.5")).last_insert(
+        make_order(Side.SELL, Decimal("10.5"), 100)
+    )
+
+    assert ob.reference_price(PegReference.OFFER) == Decimal("10.5")
+    assert ob.reference_price(PegReference.BID) == Decimal("10")
+
+def test_reference_price_skips_pegged_on_offer_side():
+    ob = OrderBook()
+
+    ob.get_or_create_level(Side.SELL, Decimal("10.5")).last_insert(
+        make_order(Side.SELL, Decimal("10.5"), 100, PegReference.OFFER)
+    )
+    ob.get_or_create_level(Side.SELL, Decimal("11")).last_insert(
+        make_order(Side.SELL, Decimal("11"), 100)
+    )
+
+    # The sell side walks upwards, so skipping means going to the higher price.
+    assert ob.best_price(Side.SELL) == Decimal("10.5")
+    assert ob.reference_price(PegReference.OFFER) == Decimal("11")
