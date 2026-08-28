@@ -186,4 +186,23 @@ def test_finding_unpegged_order():
     unpegged_price = ob.reference_price(peg_reference=PegReference.BID)
 
     assert unpegged_price is None
+
+def test_reference_price_matches_best_price_without_pegged():
+
+    ob = OrderBook()
     
+    best_order = Order(
+        side=Side.BUY,
+        order_type=OrderType.LIMIT,
+        qty=150,
+        price=Decimal("10"),
+    )
+
+    ob.get_or_create_level(Side.BUY, Decimal("10")).last_insert(best_order)
+
+    unpegged_price = ob.reference_price(peg_reference=PegReference.BID)
+
+    assert ob.best_price(Side.BUY) == Decimal("10")
+    assert unpegged_price == Decimal("10")
+
+
