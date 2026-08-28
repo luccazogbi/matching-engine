@@ -187,12 +187,12 @@ Atende ao requisito A3.
 **Estudar antes:** remoção de nó em lista duplamente encadeada (*Guia §6*); consistência entre
 índices que referenciam a mesma ordem.
 
-- [ ] Localizar a ordem pelo identificador
-- [ ] Remover da fila do nível e do índice de identificadores
-- [ ] Atualizar a quantidade agregada e remover o nível, se esvaziado
+- [x] Localizar a ordem pelo identificador
+- [x] Remover da fila do nível e do índice de identificadores
+- [x] Atualizar a quantidade agregada e remover o nível, se esvaziado
 - [ ] Emitir a saída `Order cancelled`
 - [ ] Definir e documentar o comportamento para identificador inválido
-- [ ] Testar o cancelamento nas três posições da fila
+- [x] Testar o cancelamento nas três posições da fila
 
 **Pronto quando:** o exemplo do requisito adicional 3 é reproduzido — `Order cancelled` é emitido e a ordem desaparece do livro. Cancelar a ordem do meio de uma fila de três preserva a ligação entre as outras duas.
 
@@ -204,9 +204,9 @@ Atende ao requisito A4.
 prática de mercado quanto à alteração de quantidade — *Guia §10*.
 
 - [ ] Definir a sintaxe do comando, não especificada no enunciado
-- [ ] Implementar a alteração de preço, com reposicionamento
-- [ ] Implementar a alteração de quantidade, com a regra de prioridade adotada
-- [ ] Verificar contra o exemplo do requisito adicional 4
+- [x] Implementar a alteração de preço, com reposicionamento
+- [x] Implementar a alteração de quantidade, com a regra de prioridade adotada
+- [x] Verificar contra o exemplo do requisito adicional 4
 - [ ] Registrar a regra adotada no `README.md`
 
 **Pronto quando:** o exemplo do requisito adicional 4 é reproduzido: alterada a compra de 200 @ 10 para 9,98, o livro passa a exibir 100 @ 9,99 acima de 200 @ 9,98.
@@ -258,7 +258,7 @@ importância de fixar a semente — *Guia §14*.
 - [ ] Transcrever todos os exemplos do enunciado como testes
 - [ ] Verificar os invariantes após cada operação
 - [ ] Implementar o teste aleatório sobre sequências extensas
-- [ ] Cobrir os casos limítrofes de cancelamento e alteração
+- [x] Cobrir os casos limítrofes de cancelamento e alteração
 
 **Pronto quando:** um único comando executa toda a suíte com sucesso, e o teste aleatório percorre alguns milhares de operações sem violar nenhum invariante.
 
