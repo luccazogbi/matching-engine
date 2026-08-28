@@ -2,7 +2,7 @@ import pytest
 
 from decimal import Decimal
 
-from matching_engine.order import Side
+from matching_engine.order import Side, Order, OrderType, PegReference
 from matching_engine.order_book import OrderBook
 
 # Tests for the get_or_create_level method of order_book.py
@@ -168,3 +168,22 @@ def test_best_price_dispatches_to_correct_side():
 
     assert ob.best_price(Side.BUY) == Decimal("10.00")
     assert ob.best_price(Side.SELL) == Decimal("10.50")
+
+def test_finding_unpegged_order():
+
+    ob = OrderBook()
+
+    pegged = Order(
+        side=Side.BUY,
+        order_type=OrderType.LIMIT,
+        qty=150,
+        price=Decimal("10"),
+        peg_reference=PegReference.BID,
+    )
+
+    ob.get_or_create_level(Side.BUY, Decimal("10")).last_insert(pegged)
+
+    unpegged_price = ob.reference_price(peg_reference=PegReference.BID)
+
+    assert unpegged_price is None
+    

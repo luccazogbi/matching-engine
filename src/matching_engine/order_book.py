@@ -11,7 +11,7 @@
 
 from decimal import Decimal
 
-from .order import Order, Side, OrderType, format_price
+from .order import Order, Side, OrderType, format_price, PegReference
 from .price_level import PriceLevel
 from itertools import zip_longest
 import heapq
@@ -153,6 +153,44 @@ class OrderBook:
 
             if level.first is None:
                 del levels[price]
+
+    def reference_price(self, 
+        peg_reference: PegReference
+    ) -> Decimal | None:
+        """ 
+            Here we're going to extract the best price corresponding to PegReference side, considering only 'peg_reference' is None orders.
+            Nothing guarantees me that the best price is a order with "peg_reference is None". In that way, we need to iterate over 
+            the choosen side of the book along the SORTED(descending -> BID | ascending -> OFFER) orders and find the first order with
+            peg_reference is None 
+        """ 
+        if peg_reference is PegReference.BID:
+            sorted_bid = sorted(self.bids.items(), reverse=True) # Dict self.bids (Price --> PriceLevel) sorted in descending order (it contains both key and value)
+            unpegged_price = self.finding_unpegged_order(sorted_bid)
+            return unpegged_price
+        
+        else: 
+            sorted_offer = sorted(self.offers.items()) # Dict self.offers (Price --> PriceLevel) sorted in ascending order 
+            unpegged_price = self.finding_unpegged_order(sorted_offer)
+            return unpegged_price
+                    
+    def finding_unpegged_order(self, 
+        sorted_side: tuple
+    ) -> Decimal | None:
+
+        for price, level in sorted_side: # For each price, we'll cross its queue starting from *first*, using next_order to go to the next one.
+            unpegged_price = price
+            current = level.first
+
+            while current is not None:
+
+                if current.peg_reference is None:
+                    return unpegged_price
+
+                current = current.next_order        # We will return the first price that contains a non-pegged order 
+            
+        return None
+
+
 
 if __name__ == "__main__":
     ob = OrderBook()
