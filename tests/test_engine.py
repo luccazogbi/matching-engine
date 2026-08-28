@@ -447,4 +447,36 @@ def test_modify_price_reprices_and_loses_priority():
 
     assert_book_invariants(eng)
 
-test_modify_renews_seq_on_priority_loss
+def test_modify_renews_seq_on_priority_loss():
+
+    eng = MatchingEngine()
+        
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+
+    id = eng.book.bids[Decimal("10")].first.order_id
+    seq = eng.book.bids[Decimal("10")].first.order_id
+
+    eng.modify(id, new_qty=300)
+
+    assert eng.book.bids[Decimal("10")].last.order_id == id
+    assert eng.book.bids[Decimal("10")].last.seq > seq
+    assert eng.book.bids[Decimal("10")].first.seq < eng.book.bids[Decimal("10")].last.seq
+
+    assert_book_invariants(eng)
+
+def test_modify_qty_increase_moves_to_tail():
+
+    eng = MatchingEngine()
+            
+    eng.submit_limit(Side.BUY, Decimal("10"), 100)
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+
+    id = eng.book.bids[Decimal("10")].first.order_id
+    eng.modify(id, new_qty=300)
+
+    assert eng.book.bids[Decimal("10")].first.qty == 200
+    assert eng.book.bids[Decimal("10")].last.qty == 300
+    assert eng.book.bids[Decimal("10")].total_qty == 500
+
+    assert_book_invariants(eng)
