@@ -381,3 +381,24 @@ def test_cancelled_order_does_not_match():
     assert [str(t) for t in trade_market] == []
     print(eng.book.__str__())
         
+# ---------------------------------------------- Order modification ---------------------------------------------- #
+
+
+def test_modify_price_reprices_and_loses_priority():
+
+    eng = MatchingEngine()
+    
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_limit(Side.BUY, Decimal("9.99"), 100)
+    eng.submit_limit(Side.SELL, Decimal("10.5"), 100)
+
+    first_id = next(iter(eng.book.orders))
+
+    eng.modify(first_id, new_price=Decimal("9.98"))
+
+    assert [line.rstrip() for line in str(eng.book).split("\n")] == [
+    "Ordens de Compra     | Ordens de Venda",
+    "---------------------|-----------------",
+    "100 @ 9.99           | 100 @ 10.5",
+    "200 @ 9.98           |",
+    ]
