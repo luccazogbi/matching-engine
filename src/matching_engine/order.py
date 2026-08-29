@@ -51,7 +51,13 @@ class Order:
     next_order: Order | None = None
 
     def __post_init__(self):
-        validate_order_terms(self.order_type, self.price, self.qty)
+        validate_order_terms(
+            self.order_type,
+            self.price,
+            self.qty,
+            self.side,
+            self.peg_reference,
+        )
         self.order_id = next(_id_counter)
         self.seq = next(_seq_counter)
 
@@ -62,13 +68,19 @@ def  validate_order_terms(
     order_type: OrderType,
     price: Decimal | None,
     qty: int,
+    side: Side,
+    peg_reference: PegReference | None,
 ) -> None:
 
-    """Enforce the two invariants every order must satisfy, wherever it comes from.
+    """Enforce the invariants every order must satisfy, wherever it comes from.
 
     Called from Order.__post_init__, which covers every creation path, and from
     MatchingEngine.modify, which is the only operation that changes these values after
     the order already exists.
+
+    Every rule here is a property of the order by itself. Whether the book can currently
+    supply a reference price for a pegged order is a property of the book, not of the order,
+    so the engine checks that one — this function never looks at the book.
     """
 
     if qty <= 0:
@@ -83,6 +95,24 @@ def  validate_order_terms(
 
     elif order_type is OrderType.MARKET and price is not None:
         raise ValueError("a market order must not carry a price")
+
+    # An ordinary order carries no peg reference and may take either side, so nothing below
+    # applies to it.
+    if peg_reference is None:
+        return
+
+    if order_type is OrderType.MARKET:
+        raise ValueError("a market order must not carry a peg reference")
+
+    # D12: only passive pegs exist. A buy follows the bid, a sell follows the offer. The
+    # opposite pairings would rest through the other side of the book and execute on arrival.
+    expected_side = Side.BUY if peg_reference is PegReference.BID else Side.SELL
+
+    if side is not expected_side:
+        raise ValueError(
+            f"a peg to the {peg_reference.value} requires a {expected_side.value} order, "
+            f"got {side.value}"
+        )
 
 
 def format_price(price: Decimal) -> str:
