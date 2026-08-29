@@ -191,5 +191,116 @@ def test_fill_first_removes_only_order():
     assert level.last is None
     assert level.total_qty == 0
 
-        
-        
+
+# Tests for the insert_by_seq method of price_level.py
+#-----------------------------------------------------\-----------------------------------------------------#
+
+def make_orders(how_many):
+    """Create orders in ascending seq order, so that seq order is creation order."""
+    return [
+        Order(side=Side.BUY, order_type=OrderType.LIMIT, qty=100, price=Decimal("10"))
+        for _ in range(how_many)
+    ]
+
+def queued(level):
+    """Walk the queue from the head and return the orders in queue order."""
+    out = []
+    current = level.first
+
+    while current is not None:
+        out.append(current)
+        current = current.next_order
+
+    return out
+
+def test_insert_by_seq_into_empty_level():
+    level = PriceLevel(Decimal("10"))
+    a, = make_orders(1)
+
+    level.insert_by_seq(a)
+
+    assert level.first is a
+    assert level.last is a
+    assert a.previous_order is None
+    assert a.next_order is None
+    assert level.total_qty == 100
+
+def test_insert_by_seq_as_new_head():
+    level = PriceLevel(Decimal("10"))
+    a, b = make_orders(2)
+
+    level.insert_by_seq(b)
+    level.insert_by_seq(a)
+
+    # a was created first, so it owns the older seq and belongs in front.
+    assert queued(level) == [a, b]
+    assert level.first is a
+    assert level.last is b
+    assert a.previous_order is None
+    assert b.previous_order is a
+    assert level.total_qty == 200
+
+def test_insert_by_seq_in_the_middle():
+    level = PriceLevel(Decimal("10"))
+    a, b, c = make_orders(3)
+
+    level.insert_by_seq(a)
+    level.insert_by_seq(c)
+    level.insert_by_seq(b)
+
+    assert queued(level) == [a, b, c]
+    assert level.first is a
+    assert level.last is c
+    assert a.next_order is b
+    assert c.previous_order is b
+    assert level.total_qty == 300
+
+def test_insert_by_seq_at_tail():
+    level = PriceLevel(Decimal("10"))
+    a, b = make_orders(2)
+
+    level.insert_by_seq(a)
+    level.insert_by_seq(b)
+
+    # Nothing arrived after b, so this is the same outcome as last_insert.
+    assert queued(level) == [a, b]
+    assert level.last is b
+    assert b.next_order is None
+    assert level.total_qty == 200
+
+def test_insert_by_seq_keeps_queue_sorted():
+    level = PriceLevel(Decimal("10"))
+    a, b, c, d = make_orders(4)
+
+    for order in (c, a, d, b):
+        level.insert_by_seq(order)
+
+    assert queued(level) == [a, b, c, d]
+
+    # The links must agree walking backwards too, not only forwards.
+    walked_back = []
+    current = level.last
+
+    while current is not None:
+        walked_back.append(current)
+        current = current.previous_order
+
+    assert walked_back == [d, c, b, a]
+    assert level.total_qty == 400
+
+def test_insert_by_seq_matches_last_insert_when_in_order():
+    by_seq = PriceLevel(Decimal("10"))
+    by_tail = PriceLevel(Decimal("10"))
+    a, b, c = make_orders(3)
+
+    for order in (a, b, c):
+        by_seq.insert_by_seq(order)
+
+    d, e, f = make_orders(3)
+
+    for order in (d, e, f):
+        by_tail.last_insert(order)
+
+    # Fed in arrival order, the two methods produce the same shape.
+    assert [o.qty for o in queued(by_seq)] == [o.qty for o in queued(by_tail)]
+    assert by_seq.total_qty == by_tail.total_qty

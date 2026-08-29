@@ -153,3 +153,45 @@ class PriceLevel:
         self.total_qty -= order.qty
         order.qty = new_qty
         self.total_qty += order.qty
+
+    # Inserts respecting the arrival sequence instead of at the tail
+    def insert_by_seq(self,
+        order: Order
+    ):
+
+        """
+        Used only when a pegged order is repriced. A repriced order keeps its original seq,
+        because the engine moved it — nobody asked for a new place in the queue — so the
+        destination level may already hold orders that arrived after it, and the tail would
+        put it behind them. Every other insertion in the project goes through last_insert.
+        """
+
+        # Walk until the first order that arrived after the one being inserted.
+        successor = self.first
+
+        while successor is not None and successor.seq < order.seq:
+            successor = successor.next_order
+
+        # No successor: everyone arrived earlier, so the tail is the right
+        # place. This also covers the empty level, which last_insert already handles.
+        if successor is None:
+            self.last_insert(order)
+            return
+
+        # Do this if order.seq < successor.seq
+        order.previous_order = successor.previous_order
+        order.next_order = successor
+
+        # The successor was the head, so the new order becomes the head.
+        if successor.previous_order is None:
+            self.first = order
+
+        else:
+            successor.previous_order.next_order = order
+
+        successor.previous_order = order
+
+        self.total_qty += order.qty
+
+        # Great obs: successor.next_order continuous to point to its original place. Take for example the following config for a level:
+        # PriceLevel = [Order 1(seq = 1), Order 2(seq = 3), Order_to_be_insert(seq=2)] ---> Easy to see that...

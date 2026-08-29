@@ -158,7 +158,7 @@ class OrderBook:
         peg_reference: PegReference
     ) -> Decimal | None:
         """ 
-            Here we're going to extract the best price corresponding to PegReference side, considering only 'peg_reference' is None orders.
+            Here we're going to extract the best price corresponding to PegReference side, considering only 'peg_reference is None' orders.
             Nothing guarantees me that the best price is a order with "peg_reference is None". In that way, we need to iterate over 
             the choosen side of the book along the SORTED(descending -> BID | ascending -> OFFER) orders and find the first order with
             peg_reference is None 
