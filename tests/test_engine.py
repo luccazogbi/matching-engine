@@ -1,7 +1,7 @@
 from matching_engine.engine import Trade, MatchingEngine
 from decimal import Decimal
 from matching_engine.price_level import PriceLevel
-from matching_engine.order import Side, OrderType, Order
+from matching_engine.order import Side, OrderType, Order, PegReference
 import pytest
 
 def assert_book_invariants(engine):
@@ -626,5 +626,139 @@ def test_modify_rejects_negative_qty():
         eng.modify(order_id, new_qty=-5)
 
     assert eng.book.bids[Decimal("10")].total_qty == 100
+
+    assert_book_invariants(eng)
+
+
+# Tests for submit_pegged
+#-----------------------------------------------------\-----------------------------------------------------#
+
+def test_submit_pegged_rests_at_reference():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_limit(Side.BUY, Decimal("9.99"), 100)
+    eng.submit_limit(Side.SELL, Decimal("10.5"), 100)
+
+    # A passive peg never crosses, so it can only ever return an empty list.
+    assert eng.submit_pegged(Side.BUY, PegReference.BID, 150) == []
+
+    assert [line.rstrip() for line in str(eng.book).split("\n")] == [
+        "Ordens de Compra     | Ordens de Venda",
+        "---------------------|-----------------",
+        "200 @ 10             | 100 @ 10.5",
+        "150 @ 10             |",
+        "100 @ 9.99           |",
+    ]
+
+    peg_id = max(eng.pegged_orders)
+
+    # Registered in both indices: the book one makes it cancellable and lets _match delete it.
+    assert peg_id in eng.book.orders
+    assert eng.pegged_orders[peg_id] is eng.book.orders[peg_id]
+
+    assert_book_invariants(eng)
+
+def test_submit_pegged_on_offer_side():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.SELL, Decimal("10.5"), 100)
+
+    assert eng.submit_pegged(Side.SELL, PegReference.OFFER, 50) == []
+
+    level = eng.book.offers[Decimal("10.5")]
+
+    # The statement closes requirement 5 by saying a peg to the offer works the same way.
+    assert level.first.qty == 100
+    assert level.last.qty == 50
+    assert level.last.peg_reference is PegReference.OFFER
+    assert level.total_qty == 150
+
+    assert_book_invariants(eng)
+
+@pytest.mark.parametrize(
+    "side, peg_reference",
+    [
+        (Side.BUY, PegReference.OFFER),
+        (Side.SELL, PegReference.BID),
+    ],
+) # Run the same method (below) for the each tuple of the list above 
+
+def test_submit_pegged_rejects_mismatched_reference(side, peg_reference):
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_limit(Side.SELL, Decimal("10.5"), 100)
+
+    before = str(eng.book)
+
+    # D12: only passive pegs exist. The rejection comes from Order.__post_init__.
+    with pytest.raises(ValueError):
+        eng.submit_pegged(side, peg_reference, 150)
+
+    assert str(eng.book) == before
+    assert eng.pegged_orders == {}
+
+    assert_book_invariants(eng)
+
+def test_submit_pegged_rejects_without_reference():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.SELL, Decimal("10.5"), 100)
+
+    # D13: nothing to derive a price from, so the order cannot exist.
+    with pytest.raises(ValueError):
+        eng.submit_pegged(Side.BUY, PegReference.BID, 150)
+
+    assert eng.book.bids == {}
+    assert eng.pegged_orders == {}
+
+    assert_book_invariants(eng)
+
+def test_submit_pegged_ignores_other_pegged_as_reference():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_limit(Side.BUY, Decimal("9.99"), 100)
+    eng.submit_pegged(Side.BUY, PegReference.BID, 150)
+
+    # Cancelling the limit leaves level 10 holding nothing but the first pegged order. That
+    # level is the one the reference must refuse to use. Without the repricing trigger the
+    # stranded order stays at 10, which is what makes the state reachable in this test.
+    limit_at_ten = eng.book.bids[Decimal("10")].first.order_id
+    eng.cancel(limit_at_ten)
+
+    eng.submit_pegged(Side.BUY, PegReference.BID, 50)
+
+    second_peg = eng.pegged_orders[max(eng.pegged_orders)]
+
+    # 9.99, not 10: the first pegged order cannot serve as the second one's reference (D11).
+    assert second_peg.price == Decimal("9.99")
+    assert eng.book.bids[Decimal("9.99")].total_qty == 150
+    assert eng.book.bids[Decimal("10")].total_qty == 150
+
+    assert_book_invariants(eng)
+
+def test_pegged_is_consumed_like_any_order():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_pegged(Side.BUY, PegReference.BID, 150)
+
+    peg_id = max(eng.pegged_orders)
+
+    # Once resting, a pegged order is an ordinary order: _match never reads peg_reference.
+    assert [str(t) for t in eng.submit_market(Side.SELL, 350)] == [
+        "Trade, price: 10, qty: 350"
+    ]
+
+    assert peg_id not in eng.book.orders
+    assert eng.book.bids == {}
 
     assert_book_invariants(eng)

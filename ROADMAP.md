@@ -221,9 +221,9 @@ repreçagem síncrona; risco de cascata; a tensão entre os requisitos adicionai
 
 - [x] Implementar `reference_price`, excluindo as próprias ordens *pegged*
 - [x] Implementar `insert_by_seq` no `PriceLevel`
-- [ ] Implementar `submit_pegged`, com o registro das *pegged* vivas
+- [x] Implementar `submit_pegged`, com o registro das *pegged* vivas
 - [ ] Implementar o gatilho de repreçagem ao fim de toda operação que altere o topo
-- [ ] Rejeitar peg cuja referência contradiz o lado
+- [x] Rejeitar peg cuja referência contradiz o lado
 - [x] Definir e documentar o comportamento sem preço de referência disponível
 - [x] Documentar a preservação do `seq` na repreçagem
 - [ ] Reproduzir a sequência do requisito adicional 5
