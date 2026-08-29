@@ -40,6 +40,7 @@ class MatchingEngine:
             level_after_matching.last_insert(limit_order)
             self.book.orders[limit_order.order_id] = limit_order
 
+        self._reprice_pegged()
         return list_trades
 
     def submit_market(self,
@@ -48,7 +49,10 @@ class MatchingEngine:
     ) -> list[Trade]:
 
         market_order = Order(side=side, order_type=OrderType.MARKET, qty=qty)
-        return self._match(market_order)
+        trades = self._match(market_order)
+        self._reprice_pegged()
+
+        return trades
 
     def submit_pegged(self, 
         side: Side,
@@ -68,13 +72,40 @@ class MatchingEngine:
         reference_level.last_insert(pegged_order) # 
         self.book.orders[pegged_order.order_id] = pegged_order
         self.pegged_orders[pegged_order.order_id] = pegged_order
+        self._reprice_pegged()
+
         return []
-
-
 
         # Observation: A pegged order stays in the best bid (for example), but the invariant of the book is best bid < best offer.
         # This way, it's price is below the sell side and have nothing to match. Conclusion: using _match would take off in the first price test,
         # always.
+
+    def _reprice_pegged(self) -> None:
+
+        for id, pegged in list(self.pegged_orders.items()):
+
+            if id not in self.book.orders:
+                del self.pegged_orders[id]
+                continue 
+
+            reference_price = self.book.reference_price(pegged.peg_reference) 
+            if reference_price is None:
+                self._detach(pegged)
+                del self.book.orders[id]
+                del self.pegged_orders[id]
+                continue
+
+            if reference_price == pegged.price:
+                continue
+
+            else:
+                self._detach(pegged)
+                new_reference = self.book.get_or_create_level(pegged.side, reference_price)
+                pegged.price = reference_price
+                new_reference.insert_by_seq(pegged)
+
+        return None
+
 
     def _match(self,
         order: Order
@@ -161,10 +192,11 @@ class MatchingEngine:
 
         self._detach(order_to_remove)
         del self.book.orders[order_to_remove.order_id] # Removing from the dict responsible for store order with its IDs
+        self._reprice_pegged()
 
         return order_to_remove
 
-    def modify(self,
+    def _modify(self,
         order_id: int,
         new_price: Decimal | None = None,
         new_qty: int | None = None
@@ -174,6 +206,9 @@ class MatchingEngine:
 
         if order_to_mod is None:
             return None
+
+        if order_to_mod.peg_reference is not None and new_price is not None:
+            raise ValueError("the price of a pegged order is derived from the book and cannot be modified")
 
         if new_price is None and new_qty is None:
             raise ValueError("nothing to modify: provide a price, a quantity, or both")
@@ -187,7 +222,6 @@ class MatchingEngine:
             self.cancel(order_id)
             return []
 
-        # Kind of 
         # Side and peg reference are never modified, so the current values are passed through
         # unchanged — the call still validates them together with the new price and quantity.
         validate_order_terms(
@@ -243,4 +277,16 @@ class MatchingEngine:
 
         return trades_after_changing 
 
-        
+    def modify(self,
+            order_id: int,
+            new_price: Decimal | None = None,
+            new_qty: int | None = None
+    ) -> list[Trade] | None:
+
+        trades_modify = self._modify(order_id, new_price, new_qty)
+
+        if trades_modify is not None:
+            self._reprice_pegged()
+            return trades_modify
+
+        return trades_modify
