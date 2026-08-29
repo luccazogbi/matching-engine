@@ -47,6 +47,11 @@ def assert_book_invariants(engine):
                 f"level {price}: queue order disagrees with arrival order, seqs are {sequences}"
             )
 
+            if any(order.peg_reference is not None for order in queued):
+                assert any(order.peg_reference is None for order in queued), (
+                    f"level {price} on the {side.value} side holds only pegged orders"
+                )
+
 @pytest.mark.parametrize("price, qty, expected", [
     ("20", 150, "Trade, price: 20, qty: 150"),
     ("20.00", 150, "Trade, price: 20, qty: 150"),
@@ -735,12 +740,14 @@ def test_submit_pegged_ignores_other_pegged_as_reference():
 
     eng.submit_pegged(Side.BUY, PegReference.BID, 50)
 
-    second_peg = eng.pegged_orders[max(eng.pegged_orders)]
+    first_peg, second_peg = (eng.pegged_orders[i] for i in sorted(eng.pegged_orders))
 
-    # 9.99, not 10: the first pegged order cannot serve as the second one's reference (D11).
+    # Both pegs sit at 9.99: the first followed the reference down when the limit at 10 was
+    # cancelled, and the second read that same limit — never the peg already resting there.
+    assert first_peg.price == Decimal("9.99")
     assert second_peg.price == Decimal("9.99")
-    assert eng.book.bids[Decimal("9.99")].total_qty == 150
-    assert eng.book.bids[Decimal("10")].total_qty == 150
+    assert list(eng.book.bids) == [Decimal("9.99")]
+    assert eng.book.bids[Decimal("9.99")].total_qty == 300
 
     assert_book_invariants(eng)
 
@@ -762,3 +769,48 @@ def test_pegged_is_consumed_like_any_order():
     assert eng.book.bids == {}
 
     assert_book_invariants(eng)
+
+def test_pegged_follows_new_best_bid():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_limit(Side.BUY, Decimal("9.99"), 100)
+    eng.submit_limit(Side.SELL, Decimal("10.5"), 100)
+
+    eng.submit_pegged(Side.BUY, PegReference.BID, 150)
+
+    eng.submit_limit(Side.BUY, Decimal("10.1"), 300)
+
+    assert [line.rstrip() for line in str(eng.book).split("\n")] == [
+            "Ordens de Compra     | Ordens de Venda",
+            "---------------------|-----------------",
+            "150 @ 10.1           | 100 @ 10.5",
+            "300 @ 10.1           |",
+            "200 @ 10             |",
+            "100 @ 9.99           |"
+    ]
+
+    assert_book_invariants(eng)
+
+def test_pegged_keeps_seq_on_reprice():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_limit(Side.BUY, Decimal("9.99"), 100)
+    eng.submit_limit(Side.SELL, Decimal("10.5"), 100)
+
+    eng.submit_pegged(Side.BUY, PegReference.BID, 150)
+    first_seqPeg = next(iter(eng.pegged_orders.values())).seq
+
+    eng.submit_limit(Side.BUY, Decimal("10.1"), 300)
+    seq_last = eng.book.bids[Decimal("10.1")].last.seq
+
+    second_seqPeg = next(iter(eng.pegged_orders.values())).seq
+
+    assert first_seqPeg == second_seqPeg 
+    assert (seq_last > second_seqPeg and seq_last > first_seqPeg) == True
+
+    assert_book_invariants(eng)
+
