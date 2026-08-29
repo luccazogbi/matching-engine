@@ -207,7 +207,7 @@ prática de mercado quanto à alteração de quantidade — *Guia §10*.
 - [x] Implementar a alteração de preço, com reposicionamento
 - [x] Implementar a alteração de quantidade, com a regra de prioridade adotada
 - [x] Verificar contra o exemplo do requisito adicional 4
-- [ ] Registrar a regra adotada no `README.md`
+- [x] Registrar a regra adotada no `README.md`
 
 **Pronto quando:** o exemplo do requisito adicional 4 é reproduzido: alterada a compra de 200 @ 10 para 9,98, o livro passa a exibir 100 @ 9,99 acima de 200 @ 9,98.
 
@@ -219,13 +219,13 @@ Atende ao requisito A5. É a etapa de maior complexidade conceitual.
 repreçagem síncrona; risco de cascata; a tensão entre os requisitos adicionais 4 e 5 —
 *Guia §11*.
 
-- [ ] Implementar `reference_price`, excluindo as próprias ordens *pegged*
-- [ ] Implementar `insert_by_seq` no `PriceLevel`
+- [x] Implementar `reference_price`, excluindo as próprias ordens *pegged*
+- [x] Implementar `insert_by_seq` no `PriceLevel`
 - [ ] Implementar `submit_pegged`, com o registro das *pegged* vivas
 - [ ] Implementar o gatilho de repreçagem ao fim de toda operação que altere o topo
 - [ ] Rejeitar peg cuja referência contradiz o lado
-- [ ] Definir e documentar o comportamento sem preço de referência disponível
-- [ ] Documentar a preservação do `seq` na repreçagem
+- [x] Definir e documentar o comportamento sem preço de referência disponível
+- [x] Documentar a preservação do `seq` na repreçagem
 - [ ] Reproduzir a sequência do requisito adicional 5
 
 **Pronto quando:** a sequência do requisito adicional 5 é reproduzida integralmente, inclusive com a ordem *pegged* posicionada à frente da *limit* de 300 no nível de 10,1. Cancelada a ordem que define o *bid*, a *pegged* acompanha o novo melhor preço.
@@ -257,7 +257,7 @@ importância de fixar a semente — *Guia §14*.
 **Ferramentas:** `unittest` ou `pytest` · `random.Random` com semente fixa — *Guia §8*.
 
 - [ ] Transcrever todos os exemplos do enunciado como testes
-- [ ] Verificar os invariantes após cada operação
+- [x] Verificar os invariantes após cada operação
 - [ ] Implementar o teste aleatório sobre sequências extensas
 - [x] Cobrir os casos limítrofes de cancelamento e alteração
 
@@ -269,11 +269,14 @@ Registro das decisões técnicas, conforme exigido pelo enunciado.
 
 **Estudar antes:** notação assintótica, para a análise de complexidade.
 
-- [ ] Redigir as instruções de instalação e execução
-- [ ] Descrever a arquitetura e as estruturas de dados adotadas
-- [ ] Apresentar a análise de complexidade por operação
-- [ ] Justificar cada decisão da seção 7 do `README.md`
-- [ ] Registrar as limitações conhecidas
+- [x] Redigir as instruções de instalação e execução
+- [x] Descrever a arquitetura e as estruturas de dados adotadas
+- [x] Apresentar a análise de complexidade por operação
+- [x] Justificar cada decisão da seção 7 do `README.md`
+- [x] Registrar as limitações conhecidas
+- [ ] Extrair os comentários de estudo do código para um documento próprio, organizado por
+      módulo, mantendo no código apenas o que explica decisão não óbvia no ponto em que ela é
+      tomada — **última tarefa do projeto**
 
 **Pronto quando:** uma pessoa que nunca viu o projeto consegue cloná-lo, executá-lo e reproduzir os exemplos usando apenas o `README.md`, e cada decisão da seção 7 tem justificativa escrita.
 
@@ -334,6 +337,9 @@ Os tipos mais úteis para esse projeto são:
 - `ci:` mudanças em integração contínua  
     Ex.: `ci: add automated test workflow`
 
+## Estudo
+
+- Entender melhor a parte de, ao procurar o melhor preço, ignorar as ordens pegged.
 ## Problems 
 - When I do `eng.submit_limit(Side.BUY, Decimal("10.00000"), 100)` in the test, it shows all the decimal places. How to solve this?
 - When an order comes inside the orderbook, it doens't show its orderId. IT'S AN IMPORTANT THING TO DO

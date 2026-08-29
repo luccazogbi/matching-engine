@@ -368,6 +368,153 @@ Accepted.
 
 ---
 
+## D11 — Composition of the pegged reference price
+
+### Decision
+
+The reference price is computed **ignoring the pegged orders themselves**. Only orders whose
+`peg_reference` is `None` count towards it.
+
+This is why `OrderBook.reference_price` exists as a method separate from `best_price`: the two
+deliberately disagree whenever the top level holds only pegged orders.
+
+### Motivation
+
+A pegged order carries no opinion about price — its price is borrowed. If it counted towards the
+reference, borrowed prices would start producing prices.
+
+Concretely, take the book from the statement's fifth requirement after the pegged order has
+followed a limit order up to 10.1, and then cancel that limit order. No genuine buyer is willing
+to pay 10.1 any more, and the legitimate best bid is the level below.
+
+```text
+150 @ 10.1     pegged
+200 @ 10       limit
+100 @ 9.99     limit
+```
+
+Excluding pegged orders, the reference becomes 10 and the pegged order follows it down.
+Including them, the reference is 10.1 — its own price — so it compares against itself, concludes
+that nothing changed, and never moves again.
+
+The resulting defect is a ratchet. An ordinary order can push the pegged order up, because at
+that moment the reference comes from outside it, but nothing can bring it back down, because on
+the way down it is the very floor holding itself up. The book would advertise a best bid that no
+participant ever offered.
+
+The exclusion has a second, structural consequence: since repricing a pegged order cannot change
+any reference, there is no cascade. A single repricing pass is enough, with no loop until
+stability and no risk of non-termination.
+
+### Status
+
+Accepted.
+
+---
+
+## D12 — Passive pegs only
+
+### Decision
+
+Only passive pegs are accepted: a buy pegs to the `BID`, a sell pegs to the `OFFER`. A command
+whose side contradicts its reference — `peg offer buy` — is rejected.
+
+### Motivation
+
+The statement defines a pegged order only in this form, illustrates it with `peg bid buy`, and
+adds that the same works for a peg to the offer. Crossing is never mentioned.
+
+Aggressive pegs — buying at the offer, selling at the bid — do exist in real markets, but they
+are outside the specified scope, and in this engine they would execute on arrival and never
+rest, which makes them indistinguishable from a market order.
+
+This decision also removes a question that would otherwise need answering: a pegged order can
+never cross. A buy pegged to the bid sits at the best bid, and the invariant that the best bid is
+strictly below the best offer already guarantees it rests below the sell side.
+
+The side token remains part of the command because the statement's syntax includes it. In valid
+commands it is redundant; it serves as a consistency check. Deriving the side from the reference
+instead would mean asserting inside the command parser that only passive pegs exist — a domain
+rule stated in the wrong place.
+
+### Status
+
+Accepted.
+
+---
+
+## D13 — Pegged order without an available reference
+
+### Decision
+
+A pegged order exists only while a reference exists.
+
+| Moment | Behaviour |
+|---|---|
+| No reference on submission | rejected, with an error naming the side |
+| Reference disappears while resting | the order is cancelled |
+
+### Motivation
+
+A pegged order has no price of its own, so with no reference there is nothing to derive a price
+from and no level to rest in.
+
+The alternative — leaving it parked at the last known price — was rejected because it
+reintroduces precisely the phantom price that D11 eliminates. An order sitting at a price no
+participant supports, now the best price on its side, is the defect D11 exists to prevent; it
+would be inconsistent to forbid it in one path and produce it in another.
+
+Stating the rule as a single invariant covers both cases with one sentence, which is also what
+makes it explainable.
+
+The automatic cancellation is not a trade and does not appear in the list of trades returned by
+the operation that triggered it.
+
+### Status
+
+Accepted.
+
+---
+
+## D14 — Priority of a pegged order when repriced
+
+### Decision
+
+A repriced pegged order **keeps its original `seq`** and is reinserted at the position matching
+its arrival, not at the tail of the destination level.
+
+This is the only insertion in the project that does not go through `last_insert`; it uses
+`PriceLevel.insert_by_seq`.
+
+### Motivation
+
+The statement's example requires it. Starting from a pegged buy of 150 resting at 10, a limit buy
+of 300 at 10.1 arrives and establishes a new best bid. The pegged order follows it, and the
+expected book is:
+
+```text
+150 @ 10.1     pegged, arrived earlier
+300 @ 10.1     limit, arrived later but created the level
+```
+
+The pegged order appears **ahead** of the limit order that created the level. Inserting at the
+tail would produce the two lines in the opposite order and would not match the specification.
+
+This does not contradict D10, which sends a repriced order to the back of the queue. The
+distinction is who caused the change. Under D10 it was the owner of the order issuing a new
+instruction, and the queue charges for it by renewing `seq`. In a repricing nobody asked for
+anything: the engine moved the order on its own, and an order that arrived at a given moment
+goes on being an order that arrived at that moment.
+
+Renewing `seq` here would also break the invariant that queue order equals `seq` order, since the
+order would sit ahead of orders with smaller sequence numbers.
+
+### Status
+
+Accepted.
+
+---
+
 # Future Decisions
 
 As new implementation decisions are made, they should be documented using the structure below.
