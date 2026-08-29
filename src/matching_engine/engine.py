@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 from .order_book import OrderBook
-from .order import Side, Order, OrderType, format_price, validate_order_terms
+from .order import Side, Order, OrderType, format_price, validate_order_terms, PegReference
 from .price_level import PriceLevel
 
 
@@ -20,6 +20,7 @@ class MatchingEngine:
 
     def __init__(self):
         self.book = OrderBook()
+        self.pegged_orders = {} # Key: order_id | Order (pegged order)
 
     # It'll submit the limit order
     def submit_limit(self,
@@ -48,6 +49,32 @@ class MatchingEngine:
 
         market_order = Order(side=side, order_type=OrderType.MARKET, qty=qty)
         return self._match(market_order)
+
+    def submit_pegged(self, 
+        side: Side,
+        peg_reference: PegReference, 
+        qty: int,
+
+        ) -> list[Trade]:
+
+        reference_pri = self.book.reference_price(peg_reference)
+
+        if reference_pri is None:
+            raise ValueError(f"no reference price available for the {peg_reference.value}")
+
+        pegged_order = Order(side=side, order_type=OrderType.LIMIT, qty=qty, price=reference_pri, peg_reference=peg_reference)
+
+        reference_level = self.book.levels_for(side)[reference_pri]
+        reference_level.last_insert(pegged_order) # 
+        self.book.orders[pegged_order.order_id] = pegged_order
+        self.pegged_orders[pegged_order.order_id] = pegged_order
+        return []
+
+
+
+        # Observation: A pegged order stays in the best bid (for example), but the invariant of the book is best bid < best offer.
+        # This way, it's price is below the sell side and have nothing to match. Conclusion: using _match would take off in the first price test,
+        # always.
 
     def _match(self,
         order: Order
@@ -161,10 +188,14 @@ class MatchingEngine:
             return []
 
         # Kind of 
+        # Side and peg reference are never modified, so the current values are passed through
+        # unchanged — the call still validates them together with the new price and quantity.
         validate_order_terms(
             order_to_mod.order_type,
             new_price if new_price is not None else order_to_mod.price,
             new_qty if new_qty is not None else order_to_mod.qty,
+            order_to_mod.side,
+            order_to_mod.peg_reference,
         )
 
         # Stays in the same price level

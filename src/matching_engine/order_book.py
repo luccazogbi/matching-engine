@@ -23,12 +23,14 @@ class OrderBook:
         self.offers = {} # Key: price | Value: PriceLevel (SELL)
 
         self.orders = {}  # Key: order_id | Value: Order (average O(1) lookup) 
-
+        
         # It'll be used to store the best BID and best OFFER (ASK)
         self.bid_prices = []
         self.offer_prices = []
 
+
     def levels_for(self, side: Side):
+        
         if side is Side.BUY:
             return self.bids
 
