@@ -873,7 +873,7 @@ def test_pegged_reprices_after_modify():
     assert peg.price == Decimal("10.2")
     assert Decimal("10") not in eng.book.bids
 
-        # The limit renewed its seq when repriced (D10); the peg kept its own (D14), so the peg
+    # The limit renewed its seq when repriced (D10); the peg kept its own (D14), so the peg
     # now sits ahead of the order it is following.
     assert [line.rstrip() for line in str(eng.book).split("\n")] == [
         "Ordens de Compra     | Ordens de Venda",
@@ -883,3 +883,45 @@ def test_pegged_reprices_after_modify():
     ]
 
     assert_book_invariants(eng)
+
+def test_pegged_cancelled_when_reference_disappears():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_pegged(Side.BUY, PegReference.BID, 150)
+
+    peg_id = max(eng.pegged_orders)
+    limit_id = eng.book.bids[Decimal("10")].first.order_id
+
+    # With the only non-pegged buy gone there is no reference left, and a pegged order does
+    # not exist without one (D13).
+    eng.cancel(limit_id)
+
+    assert peg_id not in eng.book.orders
+    assert peg_id not in eng.pegged_orders
+    assert eng.book.bids == {}
+
+    assert_book_invariants(eng)
+
+
+def test_two_pegged_keep_relative_order():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_pegged(Side.BUY, PegReference.BID, 150)
+    eng.submit_pegged(Side.BUY, PegReference.BID, 50)
+
+    eng.submit_limit(Side.BUY, Decimal("10.1"), 300)
+
+        # Both follow, keep their order between themselves, and both sit ahead of the limit that
+    # created the level. insert_by_seq settles this regardless of the order they are visited.
+    assert [line.rstrip() for line in str(eng.book).split("\n")] == [
+        "Ordens de Compra     | Ordens de Venda",
+        "---------------------|-----------------",
+        "150 @ 10.1           |",
+        "50 @ 10.1            |",
+        "300 @ 10.1           |",
+        "200 @ 10             |",
+    ]
