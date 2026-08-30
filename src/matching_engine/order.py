@@ -117,30 +117,3 @@ def  validate_order_terms(
 
 def format_price(price: Decimal) -> str:
     return f"{price.normalize():f}"
-
-
-# Good approach to implement in each module, because it executes a code block only when this file is executed directly
-if __name__ == "__main__": 
-
-    a = Order(
-        side=Side.BUY,
-        order_type=OrderType.LIMIT,
-        qty=100,
-        price=Decimal("10.50")
-    )
-
-    b = Order(
-        side=Side.BUY,
-        order_type=OrderType.LIMIT,
-        qty=200,
-        price=Decimal("10.50")
-    )
-
-    c = Order(
-            side=Side.BUY,
-            order_type=OrderType.MARKET,
-            qty=200
-        )
-    print(a)
-    print(b)
-    print(c)

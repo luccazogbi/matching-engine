@@ -21,11 +21,7 @@ class MatchingEngine:
     def __init__(self):
         self.book = OrderBook()
         self.pegged_orders = {}
-
-        # The identifier of an accepted order is not part of any return type, and the
-        # interface has to report it. Recorded here so the CLI can read it without
-        # changing the signature of three methods and every test that asserts on them.
-        self.last_accepted_order = None # Key: order_id | Order (pegged order)
+        self.last_accepted_order = None
 
     # It'll submit the limit order
     def submit_limit(self,
