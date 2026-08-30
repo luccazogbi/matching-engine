@@ -12,3 +12,6 @@ build/
 *.egg-info/
 # contexto local para assistentes de IA
 CONTEXT.md
+
+# Material de estudo pessoal
+docs/ROTEIRO DE ESTUDO.md
