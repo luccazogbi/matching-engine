@@ -20,7 +20,12 @@ class MatchingEngine:
 
     def __init__(self):
         self.book = OrderBook()
-        self.pegged_orders = {} # Key: order_id | Order (pegged order)
+        self.pegged_orders = {}
+
+        # The identifier of an accepted order is not part of any return type, and the
+        # interface has to report it. Recorded here so the CLI can read it without
+        # changing the signature of three methods and every test that asserts on them.
+        self.last_accepted_order = None # Key: order_id | Order (pegged order)
 
     # It'll submit the limit order
     def submit_limit(self,
@@ -31,6 +36,7 @@ class MatchingEngine:
 
         # Create the limit order (aggresive) based on what it was given 
         limit_order = Order(side=side, order_type=OrderType.LIMIT, qty=qty, price=price)
+        self.last_accepted_order = limit_order
         list_trades = self._match(limit_order)
 
         # If there's any left over inside order.qty (Only for OrderType.LIMIT)
@@ -49,6 +55,7 @@ class MatchingEngine:
     ) -> list[Trade]:
 
         market_order = Order(side=side, order_type=OrderType.MARKET, qty=qty)
+        self.last_accepted_order = market_order
         trades = self._match(market_order)
         self._reprice_pegged()
 
@@ -72,6 +79,7 @@ class MatchingEngine:
         reference_level.last_insert(pegged_order) # 
         self.book.orders[pegged_order.order_id] = pegged_order
         self.pegged_orders[pegged_order.order_id] = pegged_order
+        self.last_accepted_order = pegged_order
         self._reprice_pegged()
 
         return []
