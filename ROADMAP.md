@@ -49,9 +49,9 @@ Premissas fixadas pelo enunciado:
 
 - [x] **A1** Visualização do livro
 - [x] **A2** Respeito à ordem de chegada das ordens
-- [ ] **A3** Cancelamento, com remoção efetiva da engine
-- [ ] **A4** Alteração de preço, quantidade ou ambos, com reposicionamento na fila
-- [ ] **A5** Ordens *pegged*, acompanhando o *bid* ou o *offer*
+- [x] **A3** Cancelamento, com remoção efetiva da engine
+- [x] **A4** Alteração de preço, quantidade ou ambos, com reposicionamento na fila
+- [x] **A5** Ordens *pegged*, acompanhando o *bid* ou o *offer*
 
 As decisões de projeto exigidas pelo enunciado são registradas na seção 7 do `README.md`.
 
@@ -203,7 +203,7 @@ Atende ao requisito A4.
 **Estudar antes:** regra do enunciado quanto à perda de prioridade na alteração de preço;
 prática de mercado quanto à alteração de quantidade — *Guia §10*.
 
-- [ ] Definir a sintaxe do comando, não especificada no enunciado
+- [x] Definir a sintaxe do comando, não especificada no enunciado
 - [x] Implementar a alteração de preço, com reposicionamento
 - [x] Implementar a alteração de quantidade, com a regra de prioridade adotada
 - [x] Verificar contra o exemplo do requisito adicional 4
@@ -222,11 +222,11 @@ repreçagem síncrona; risco de cascata; a tensão entre os requisitos adicionai
 - [x] Implementar `reference_price`, excluindo as próprias ordens *pegged*
 - [x] Implementar `insert_by_seq` no `PriceLevel`
 - [x] Implementar `submit_pegged`, com o registro das *pegged* vivas
-- [ ] Implementar o gatilho de repreçagem ao fim de toda operação que altere o topo
+- [x] Implementar o gatilho de repreçagem ao fim de toda operação que altere o topo
 - [x] Rejeitar peg cuja referência contradiz o lado
 - [x] Definir e documentar o comportamento sem preço de referência disponível
 - [x] Documentar a preservação do `seq` na repreçagem
-- [ ] Reproduzir a sequência do requisito adicional 5
+- [x] Reproduzir a sequência do requisito adicional 5
 
 **Pronto quando:** a sequência do requisito adicional 5 é reproduzida integralmente, inclusive com a ordem *pegged* posicionada à frente da *limit* de 300 no nível de 10,1. Cancelada a ordem que define o *bid*, a *pegged* acompanha o novo melhor preço.
 
@@ -237,13 +237,13 @@ Exposição das funcionalidades por comandos textuais.
 **Estudar antes:** leitura da entrada padrão; análise sintática de comandos; separação entre
 apresentação e lógica de negócio — *Guia §13*.
 
-- [ ] Implementar o laço de leitura e o analisador de comandos
-- [ ] Suportar os seis comandos: `limit`, `market`, `peg`, `cancel order`, alteração e `print book`
-- [ ] Emitir `Order created: <side> <qty> @ <price> <id>` ao aceitar uma ordem
-- [ ] Emitir `Order cancelled` ao cancelar
-- [ ] Formatar todo preço exibido com `format_price`
-- [ ] Tratar entradas malformadas sem interromper a execução
-- [ ] Assegurar que a engine permaneça independente da interface
+- [x] Implementar o laço de leitura e o analisador de comandos
+- [x] Suportar os seis comandos: `limit`, `market`, `peg`, `cancel order`, alteração e `print book`
+- [x] Emitir `Order created: <side> <qty> @ <price> <id>` ao aceitar uma ordem
+- [x] Emitir `Order cancelled` ao cancelar
+- [x] Formatar todo preço exibido com `format_price`
+- [x] Tratar entradas malformadas sem interromper a execução
+- [x] Assegurar que a engine permaneça independente da interface
 
 **Pronto quando:** o bloco de comandos do enunciado, colado no terminal, produz a saída esperada; e uma entrada malformada devolve mensagem de erro sem encerrar a sessão.
 
@@ -256,7 +256,7 @@ importância de fixar a semente — *Guia §14*.
 
 **Ferramentas:** `unittest` ou `pytest` · `random.Random` com semente fixa — *Guia §8*.
 
-- [ ] Transcrever todos os exemplos do enunciado como testes
+- [x] Transcrever todos os exemplos do enunciado como testes
 - [x] Verificar os invariantes após cada operação
 - [ ] Implementar o teste aleatório sobre sequências extensas
 - [x] Cobrir os casos limítrofes de cancelamento e alteração

@@ -12,3 +12,6 @@ build/
 *.egg-info/
 # contexto local para assistentes de IA — nao faz parte da entrega
 CONTEXT.md
+
+# Material de preparacao pessoal, nao faz parte da entrega
+docs/ROTEIRO DE ESTUDO.md

@@ -3,8 +3,8 @@
 Sistema de cruzamento de ordens (*order matching system*) para um único ativo, com ordens
 *limit*, *market* e *pegged*, prioridade preço-tempo e livro de ofertas mantido em memória.
 
-> **Estado do projeto:** em desenvolvimento. As seções marcadas com _a preencher_ dependem da
-> interface de linha de comando, ainda não implementada — ver [ROADMAP.md](ROADMAP.md).
+> **Estado do projeto:** todos os requisitos do enunciado estão implementados e cobertos por
+> testes. O detalhamento das tarefas está em [ROADMAP.md](ROADMAP.md).
 
 ---
 
@@ -64,9 +64,9 @@ linha de comando não ter acesso a nenhuma estrutura interna: ela conversa apena
 |---|---|---|
 | A1 | Visualização do livro | [x] |
 | A2 | Respeito à ordem de chegada | [x] |
-| A3 | Cancelamento de ordens | [x] engine · falta o comando |
-| A4 | Alteração de preço e/ou quantidade | [x] engine · falta o comando |
-| A5 | Ordens *pegged* | [ ] em andamento |
+| A3 | Cancelamento de ordens | [x] |
+| A4 | Alteração de preço e/ou quantidade | [x] |
+| A5 | Ordens *pegged* | [x] |
 
 ---
 
@@ -90,7 +90,12 @@ diretório de trabalho.
 
 ### Uso
 
-> _A preencher: depende da interface de linha de comando._
+```bash
+python -m matching_engine
+```
+
+Os comandos são lidos da entrada padrão, um por linha. `clear` limpa a tela sem afetar o
+livro, e `quit` encerra.
 
 ### Execução dos testes
 
@@ -115,11 +120,18 @@ A engine é operada por comandos textuais lidos da entrada padrão.
 | Ordem *market* | `market <side> <qty>` | Executada imediatamente ao melhor preço disponível |
 | Ordem *pegged* | `peg <bid\|offer> <side> <qty>` | Acompanha o melhor preço de referência |
 | Cancelamento | `cancel order <id>` | Remove a ordem da engine |
-| Alteração | _a definir_ | Altera preço, quantidade ou ambos |
+| Alteração | `modify order <id> [price <price>] [qty <qty>]` | Altera preço, quantidade ou ambos |
 | Visualização | `print book` | Exibe o estado do livro |
+| Ordens abertas | `print orders` | Lista as ordens repousadas com seus identificadores |
+| Limpeza da tela | `clear` | Apaga a tela sem afetar o livro |
 
 O argumento `<side>` assume os valores `buy` ou `sell`. Nas ordens *limit*, **o preço precede a
 quantidade**.
+
+O identificador é anunciado uma única vez, na criação, e é o que `cancel` e `modify` recebem.
+O livro não o exibe, porque o formato dele é o fixado pelo enunciado — daí `print orders`,
+que lista as ordens repousadas com identificador, lado, quantidade, preço e, quando for o
+caso, a referência de peg.
 
 Na ordem *pegged*, o lado e a referência são informados separadamente, conforme a sintaxe do
 enunciado. Como apenas pegs passivos são aceitos (§7.7), o lado é redundante nos comandos
@@ -127,7 +139,48 @@ válidos e serve como verificação: `peg offer buy` é rejeitado por contradiç
 
 ### Exemplo
 
-> _A preencher: sessão de exemplo com entrada e saída reais._
+Sessão reproduzindo o requisito adicional 5:
+
+```text
+>> limit buy 10 200
+Order created: buy 200 @ 10 1
+>> limit buy 9.99 100
+Order created: buy 100 @ 9.99 2
+>> limit sell 10.5 100
+Order created: sell 100 @ 10.5 3
+>> peg bid buy 150
+Order created: buy 150 @ 10 4
+>> print book
+Ordens de Compra     | Ordens de Venda
+---------------------|-----------------
+200 @ 10             | 100 @ 10.5
+150 @ 10             |
+100 @ 9.99           |
+>> limit buy 10.1 300
+Order created: buy 300 @ 10.1 5
+>> print book
+Ordens de Compra     | Ordens de Venda
+---------------------|-----------------
+150 @ 10.1           | 100 @ 10.5
+300 @ 10.1           |
+200 @ 10             |
+100 @ 9.99           |
+>> cancel order 5
+Order cancelled
+>> print book
+Ordens de Compra     | Ordens de Venda
+---------------------|-----------------
+200 @ 10             | 100 @ 10.5
+150 @ 10             |
+100 @ 9.99           |
+>> limit sell 9 500
+Order created: sell 500 @ 9 6
+Trade, price: 10, qty: 350
+Trade, price: 9.99, qty: 100
+```
+
+A ordem *pegged* acompanha o melhor preço de compra nos dois sentidos: sobe quando a *limit*
+de 10,1 estabelece um novo topo, e desce quando essa *limit* é cancelada.
 
 ---
 
@@ -372,6 +425,13 @@ por varredura — a mesma troca de varredura por índice que os heaps já fazem 
 **Sem tipos de ordem além dos três exigidos.** Não há *stop*, *iceberg*, nem validade além da
 sessão. Ordens a mercado são implicitamente *immediate or cancel* (§7.2), e não há como pedir
 outro comportamento de validade.
+
+**O identificador da ordem criada não é devolvido pelos métodos de submissão.** Eles
+devolvem `list[Trade]`, e a interface precisa do identificador para a saída `Order created`.
+A engine registra a última ordem aceita num atributo, que a interface lê. O desenho correto
+seria devolver identificador e negócios juntos, num pequeno objeto de resultado; isso foi
+preterido porque alteraria a assinatura de três métodos e cerca de dez asserções existentes,
+a poucas horas do prazo. A troca está registrada aqui em vez de escondida.
 
 **A precisão do preço não é limitada.** `Decimal` aceita qualquer número de casas decimais, e a
 engine não impõe um incremento mínimo de preço. Uma bolsa real rejeitaria preços fora da grade
