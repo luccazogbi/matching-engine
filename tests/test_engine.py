@@ -837,3 +837,22 @@ def test_pegged_follows_down_on_cancel():
     ]
 
     assert Decimal("10.1") not in eng.book.bids 
+
+def test_pegged_does_not_move_when_reference_unchanged():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_pegged(Side.BUY, PegReference.BID, 150)
+
+    peg = eng.pegged_orders[max(eng.pegged_orders)]
+    seq_before = peg.seq
+
+    # 9.98 is worse than the current best bid, so the reference does not move.
+    eng.submit_limit(Side.BUY, Decimal("9.98"), 50)
+
+    assert peg.price == Decimal("10")
+    assert peg.seq == seq_before
+    assert eng.book.bids[Decimal("10")].last is peg
+
+    assert_book_invariants(eng)
