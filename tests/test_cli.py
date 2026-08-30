@@ -9,19 +9,13 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def reset_counters():
-    """Give every test a book whose first order has id 1.
-
-    The identifier and sequence counters live at module level and are shared by the whole
-    session, so without this the ids depend on how many tests ran before. The interface is
-    the one place where the identifier is part of the specified output, so the tests have to
-    be able to name it.
-    """
+   
     order_module._id_counter = count(1)
     order_module._seq_counter = count(1)
 
 
 def run(engine, *commands):
-    """Feed several commands and collect every line they produced, in order."""
+
     lines = []
 
     for command in commands:
@@ -41,7 +35,6 @@ def test_creation_line_reports_submitted_quantity():
 
     lines = run(eng, "limit sell 10 100", "limit buy 10 100")
 
-    # The buy is fully executed, so nothing is left of it -- the line must still say 100.
     assert lines[1] == "Order created: buy 100 @ 10 2"
     assert lines[2] == "Trade, price: 10, qty: 100"
 
@@ -84,8 +77,6 @@ def test_requirement_five_sequence():
 
     run(eng, "limit buy 10.1 300")
 
-    # The pegged order followed the new best bid and sits ahead of the limit that created
-    # the level, because it arrived first (D14).
     assert [line.rstrip() for line in run(eng, "print book")] == [
         "Ordens de Compra     | Ordens de Venda",
         "---------------------|-----------------",
@@ -147,7 +138,6 @@ def test_modify_quantity_only():
 def test_malformed_input_never_raises(command, expected):
     eng = MatchingEngine()
 
-    # Every rejection has to come back as a line, or the read loop dies on a typo.
     assert execute_command(eng, command) == [expected]
 
 
@@ -160,7 +150,6 @@ def test_empty_line_is_ignored():
 def test_engine_rejection_becomes_an_error_line():
     eng = MatchingEngine()
 
-    # The engine raises; the interface turns it into a message and carries on.
     assert run(eng, "peg bid buy 150") == [
         "Error: no reference price available for the bid"
     ]
@@ -172,7 +161,6 @@ def test_print_orders_lists_identifiers():
 
     run(eng, "limit buy 10 200", "limit sell 10.5 100", "peg bid buy 150")
 
-    # The identifier is announced only at creation; this is how it is recovered afterwards.
     assert run(eng, "print orders") == [
         "1 | buy 200 @ 10",
         "2 | sell 100 @ 10.5",
@@ -201,7 +189,6 @@ def test_clear_wipes_the_screen_but_not_the_book():
 
     assert execute_command(eng, "clear") == ["\033[H\033[2J\033[3J"]
 
-    # Only the display was cleared: the order is still there and still cancellable.
     assert run(eng, "print orders") == ["1 | buy 200 @ 10"]
 
 
