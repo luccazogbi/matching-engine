@@ -186,7 +186,7 @@ de 10,1 estabelece um novo topo, e desce quando essa *limit* é cancelada.
 
 ## 5. Arquitetura
 
-Quatro módulos, em camadas, cada um dependendo apenas dos anteriores.
+Cinco módulos, em camadas, cada um dependendo apenas dos anteriores.
 
 | Módulo | Conteúdo | Responsabilidade |
 |---|---|---|
@@ -194,6 +194,7 @@ Quatro módulos, em camadas, cada um dependendo apenas dos anteriores.
 | `price_level.py` | `PriceLevel` | Prioridade temporal dentro de um preço. Fila FIFO duplamente encadeada |
 | `order_book.py` | `OrderBook` | Organização dos níveis e acesso indexado. Não cria ordens |
 | `engine.py` | `Trade`, `MatchingEngine` | Regras de negócio: cruzamento, repouso, cancelamento, alteração, repreçagem |
+| `cli.py` | `execute_command`, `main` | Interface. O único módulo que conhece texto |
 
 A validação é centralizada em `validate_order_terms`, chamada do `__post_init__` do `Order` —
 que cobre todo caminho de criação — e do `modify`, que é a única operação capaz de alterar preço
@@ -213,11 +214,14 @@ src/matching_engine/
     price_level.py   PriceLevel — fila FIFO duplamente encadeada
     order_book.py    OrderBook — três índices e dois heaps
     engine.py        Trade, MatchingEngine
+    cli.py           análise dos comandos e formatação da saída
+    __main__.py      ponto de entrada de `python -m matching_engine`
 tests/
     test_order.py        validação e construção de ordens
     test_price_level.py  operações da fila
     test_order_book.py   níveis, melhor preço e preço de referência
-    test_engine.py       cruzamento, cancelamento, alteração e invariantes
+    test_engine.py       cruzamento, cancelamento, alteração, pegged e invariantes
+    test_cli.py          comandos, saídas e entrada malformada
 docs/
     DECISIONS.md                          registro das decisões, D01 em diante
     Matching Engine - Guia de Estudo.pdf   teoria e vocabulário
@@ -370,7 +374,7 @@ comporta como esperado. (`D01`)
 
 ## 8. Testes
 
-76 testes, organizados por camada, executados com `pytest`. Cada módulo tem o seu arquivo, de
+116 testes, organizados por camada, executados com `pytest`. Cada módulo tem o seu arquivo, de
 modo que uma falha aponta diretamente para a camada responsável.
 
 A verificação principal são os **exemplos do enunciado transcritos literalmente**: os quadros do
