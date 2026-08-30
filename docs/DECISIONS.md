@@ -45,9 +45,6 @@ but loses its place.
 **Why.** It is a data holder — side, type, quantity, price, peg reference, queue links — and the
 decorator generates `__init__` and `__repr__` for free.
 
-**Watch out.** It also generates `__eq__`, which compares every field, including the queue
-links. Anywhere identity matters, the code compares with `is`, never `==`.
-
 ---
 
 ## D05 — Enumerated values
