@@ -814,3 +814,26 @@ def test_pegged_keeps_seq_on_reprice():
 
     assert_book_invariants(eng)
 
+def test_pegged_follows_down_on_cancel():
+
+    eng = MatchingEngine()
+    
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_limit(Side.BUY, Decimal("9.99"), 100)
+    eng.submit_limit(Side.SELL, Decimal("10.5"), 100)
+
+    eng.submit_pegged(Side.BUY, PegReference.BID, 150)
+
+    eng.submit_limit(Side.BUY, Decimal("10.1"), 300)
+    id_cancel = eng.book.bids[Decimal("10.1")].last.order_id
+    eng.cancel(id_cancel)
+
+    assert [line.rstrip() for line in str(eng.book).split("\n")] == [
+                "Ordens de Compra     | Ordens de Venda",
+                "---------------------|-----------------",
+                "200 @ 10             | 100 @ 10.5",
+                "150 @ 10             |",
+                "100 @ 9.99           |",
+    ]
+
+    assert Decimal("10.1") not in eng.book.bids 
