@@ -1,345 +1,471 @@
-# Roadmap — Matching Engine
+\# Roadmap — Matching Engine
 
-Plano de construção do sistema de cruzamento de ordens solicitado no processo seletivo.
+Construction plan for the order matching system requested in the selection process.
 
-Cada tarefa traz uma linha **Estudar antes**, indicando o conhecimento necessário para
-executá-la. As referências no formato *Guia §N* remetem ao documento
-`Matching Engine - Guia de Estudo.pdf`, nesta mesma pasta.
+Each task includes a **\*\*Study before\*\*** line, indicating the knowledge required to
 
-**Prazo: 30/08/2026, 23h59.**
+complete it. References in the format *\*Guide §N\** refer to the document
 
----
+\`Matching Engine - Guia de Estudo.pdf\`, in this same folder.
 
-## Sobre o projeto
+**\*\*Deadline: 30/08/2026, 23h59.\*\***
 
-Uma *matching engine* é o componente responsável por cruzar ordens de compra e venda de forma
-determinística, respeitando regras de prioridade. Este projeto implementa uma engine para um
-único ativo, com ordens *limit*, *market* e *pegged*.
+\---
 
-Premissas fixadas pelo enunciado:
+\## About the project
 
-- um único ativo, sem segmentação do livro por instrumento;
-- armazenamento volátil, sem persistência em disco ou banco de dados;
-- complexidade preferencialmente O(N), evitando varreduras lineares;
-- escopo restrito à lógica de negócio, sem considerações de infraestrutura;
-- linguagem e paradigma livres.
+A *\*matching engine\** is the component responsible for matching buy and sell orders in a
 
----
+deterministic way, respecting priority rules. This project implements an engine for a
 
-## Requisitos
+single asset, with *\*limit\**, *\*market\** and *\*pegged\** orders.
 
-### Entrega e avaliação
+Assumptions established by the assignment:
 
-- [x] Projeto publicado em repositório no GitHub
-- [ ] Commits incrementais, com mensagens que descrevem as decisões tomadas
-- [ ] Nenhum commit concentrando parcela desproporcional da implementação
-- [ ] Capacidade de explicar integralmente a base de código, incluindo o que foi produzido com
-      auxílio de ferramentas de IA
-- [ ] Entrega efetuada até 30/08/2026, 23h59
+\- a single asset, without book segmentation by instrument;
 
-### Funcionais — base
+\- volatile storage, without disk or database persistence;
 
-- [x] **B1** Inserção de ordens com tipo, lado, preço e quantidade
-- [x] **B2** Ordens *limit*, passivas e a preço fixo
-- [x] **B3** Ordens *market*, executadas ao melhor preço disponível
-- [x] **B4** Saída `Trade, price: <preço>, qty: <quantidade>` a cada negócio
-- [x] **B5** Tratamento definido e justificado para ordens *limit* cujo preço geraria negócio
+\- complexity preferably O(N), avoiding linear scans;
 
-### Funcionais — adicionais
+\- scope restricted to business logic, without infrastructure considerations;
 
-- [x] **A1** Visualização do livro
-- [x] **A2** Respeito à ordem de chegada das ordens
-- [x] **A3** Cancelamento, com remoção efetiva da engine
-- [x] **A4** Alteração de preço, quantidade ou ambos, com reposicionamento na fila
-- [x] **A5** Ordens *pegged*, acompanhando o *bid* ou o *offer*
+\- language and paradigm are free.
 
-As decisões de projeto exigidas pelo enunciado são registradas na seção 7 do `README.md`.
+\---
 
----
+\## Requirements
 
-## Tarefas
+\### Delivery and evaluation
 
-### 1. Preparação do repositório
+\- [x] Project published in a GitHub repository
 
-Estrutura do projeto e início do histórico de versionamento.
+\- [ ] Incremental commits, with messages describing the decisions made
 
-**Estudar antes:** comandos básicos de Git; convenções de mensagem de commit; `.gitignore`.
+\- [ ] No commit concentrating a disproportionate portion of the implementation
 
-- [x] Criar o repositório no GitHub e vinculá-lo à pasta local
-- [x] Definir a estrutura de diretórios, separando código-fonte e testes
-- [x] Adicionar `.gitignore`
-- [x] Criar o `README.md` inicial
-- [x] Registrar o primeiro commit
+\- [ ] Ability to fully explain the codebase, including what was produced with
 
-**Pronto quando:** `git log` mostra ao menos um commit, `git status` está limpo, o repositório abre no GitHub exibindo o README, e `git ls-files` não lista nenhum artefato de execução.
+      the assistance of AI tools
 
-### 2. Modelo de domínio
+\- [ ] Delivery completed by 30/08/2026, 23h59
 
-Entidades e representação do preço, antes de qualquer lógica.
+\### Functional — base
 
-**Estudar antes:** vocabulário do domínio (*Guia §1*); `dataclasses` e `enum`; erros de
-arredondamento em ponto flutuante e alternativas (*Guia §13*); contadores monotônicos
-(*Guia §5*).
+\- [x] **\*\*B1\*\*** Order insertion with type, side, price and quantity
 
-**Ferramentas:** `dataclasses.dataclass` · `enum.Enum` · `itertools.count` · `decimal.Decimal` — *Guia §8*.
+\- [x] **\*\*B2\*\*** *\*Limit\** orders, passive and at a fixed price
 
-- [x] Definir a entidade que representa uma ordem
-- [x] Definir os tipos enumerados para lado e tipo de ordem
-- [x] Fixar a representação do preço — decisão estrutural, cara de reverter
-- [x] Estabelecer o gerador de identificadores e o contador de ordem de chegada
+\- [x] **\*\*B3\*\*** *\*Market\** orders, executed at the best available price
 
-**Pronto quando:** é possível criar duas ordens ao mesmo preço e determinar, pelo número de sequência, qual chegou primeiro. Na representação de preço adotada, somar 0,10 e 0,20 e comparar com 0,30 devolve verdadeiro.
+\- [x] **\*\*B4\*\*** Output \`Trade, price: \<price>, qty: \<quantity>\` for each trade
 
-### 3. Fila do nível de preço
+\- [x] **\*\*B5\*\*** Defined and justified handling for *\*limit\** orders whose price would generate a trade
 
-Estrutura que sustenta a prioridade temporal, com remoção em tempo constante.
+\### Functional — additional
 
-**Estudar antes:** nós; listas simplesmente e duplamente encadeadas; referências em Python;
-fila FIFO; por que `list.pop(0)` é O(N); nós-sentinela — *Guia §6*.
+\- [x] **\*\*A1\*\*** Order book visualization
 
-- [x] Implementar a fila duplamente encadeada, com cabeça e cauda
-- [x] Implementar inserção na cauda
-- [x] Implementar remoção da cabeça
-- [x] Implementar remoção de nó arbitrário, sem percorrer a fila
-- [x] Manter a quantidade agregada do nível atualizada
-- [x] Testar remoção na cabeça, no meio e na cauda
+\- [x] **\*\*A2\*\*** Respect for order arrival sequence
 
-**Pronto quando:** numa fila de três ordens, remover a do meio mantém as outras duas corretamente ligadas e a quantidade agregada igual à soma das restantes — sem que o método percorra a fila.
+\- [x] **\*\*A3\*\*** Cancellation, with effective removal from the engine
 
-### 4. Livro de ofertas
+\- [x] **\*\*A4\*\*** Modification of price, quantity or both, with queue repositioning
 
-Índices que localizam o melhor preço, um nível e uma ordem específica.
+\- [x] **\*\*A5\*\*** *\*Pegged\** orders, following the *\*bid\** or the *\*offer\**
 
-**Estudar antes:** tabelas de dispersão (*Guia §7*); heap binário e `heapq`; representação de
-*max-heap* por negação da chave (*Guia §8*); remoção preguiçosa (*Guia §7*).
+The design decisions required by the assignment are recorded in section 7 of \`README.md\`.
 
-**Ferramentas:** `dict` · `heapq.heappush` · `heapq.heappop` · `sortedcontainers.SortedDict` (alternativa) — *Guia §8*.
+\---
 
-- [x] Implementar o índice de preço para nível, por lado
-- [x] Implementar o índice de identificador para ordem
-- [x] Implementar a estrutura de ranking de preços, por lado
-- [x] Implementar as consultas de melhor preço de compra e de venda
-- [x] Implementar criação e remoção automática de níveis vazios
-- [x] Testar os invariantes de consistência
+\## Tasks
 
-**Pronto quando:** inserindo compras a 10, 9,99 e 9,98 em ordem arbitrária, a consulta de melhor compra devolve 10; esvaziado um nível, ele deixa de existir e o melhor preço passa ao seguinte.
+\### 1. Repository preparation
 
-### 5. Visualização do livro
+Project structure and beginning of the version control history.
 
-Atende ao requisito A1 e serve de instrumento de depuração para todas as etapas seguintes.
+**\*\*Study before:\*\*** basic Git commands; commit message conventions; \`.gitignore\`.
 
-**Estudar antes:** formatação e alinhamento de cadeias de caracteres; exibição por ordem
-individual em vez de nível agregado (*Guia §10*).
+\- [x] Create the repository on GitHub and link it to the local folder
 
-- [x] Implementar a apresentação em duas colunas
-- [x] Exibir cada ordem individualmente, preservando a fila
-- [x] Verificar contra o livro hipotético do requisito adicional 4
+\- [x] Define the directory structure, separating source code and tests
 
-**Pronto quando:** o livro do requisito adicional 4 é exibido com as compras em ordem decrescente de preço e as vendas em ordem crescente, uma linha por ordem.
+\- [x] Add \`.gitignore\`
 
-### 6. Inserção de ordens limit
+\- [x] Create the initial \`README.md\`
 
-Ordens sem contraparte repousam no livro, na posição correta.
+\- [x] Record the first commit
 
-**Estudar antes:** gramática dos comandos e a ordem dos argumentos (*Guia §2*); prioridade
-preço-tempo (*Guia §5*); modelo orientado a eventos (*Guia §3*).
+**\*\*Done when:\*\*** \`git log\` shows at least one commit, \`git status\` is clean, the repository opens on GitHub displaying the README, and \`git ls-files\` does not list any execution artifact.
 
-- [x] Implementar a inserção, ainda sem cruzamento
-- [x] Atribuir identificador e número de sequência a cada ordem aceita
-- [x] Conferir, pela visualização, a ordenação entre níveis e dentro do nível
+\### 2. Domain model
 
-**Pronto quando:** os três primeiros comandos do exemplo do enunciado produzem um livro com uma compra e duas vendas, com a venda de 100 à frente da de 200 no mesmo nível.
+Entities and price representation, before any logic.
 
-### 7. Motor de cruzamento
+**\*\*Study before:\*\*** domain vocabulary (*\*Guide §1\**); \`dataclasses\` and \`enum\`; floating-point
 
-Lógica central de casamento de ordens. É a etapa mais importante do projeto.
+rounding errors and alternatives (*\*Guide §13\**); monotonic counters
 
-**Estudar antes:** distinção entre cruzamento e execução; regra do preço da ordem passiva;
-regra da quantidade mínima; varredura de níveis; significado de limite numa ordem *limit* —
-*Guia §4*. Fluxo completo do comando — *Guia §9*.
+(*\*Guide §5\**).
 
-- [x] Implementar o laço de cruzamento, com o critério de aceitação parametrizado
-- [x] Emitir a saída `Trade` no formato exato do enunciado
-- [x] Remover ordens integralmente executadas e níveis esvaziados
-- [x] Depositar no livro a quantidade remanescente da ordem agressora
-- [x] Reproduzir o exemplo do enunciado como teste automatizado
-- [x] Registrar a decisão sobre ordens *limit* cruzantes — `docs/DECISIONS.md`, D08
+**\*\*Tools:\*\*** \`dataclasses.dataclass\` · \`enum.Enum\` · \`itertools.count\` · \`decimal.Decimal\` — *\*Guide §8\**.
 
-**Pronto quando:** a sequência completa do exemplo do enunciado produz exatamente as três linhas `Trade` esperadas. Além disso, `limit buy 25 250` contra vendas de 100 @ 20, 100 @ 22 e 100 @ 26 gera dois negócios — a 20 e a 22 — e deixa 50 repousando a 25.
+\- [x] Define the entity that represents an order
 
-### 8. Ordens a mercado
+\- [x] Define the enumerated types for side and order type
 
-Caso particular do algoritmo anterior, com aceitação irrestrita de preço.
+\- [x] Establish the price representation — structural decision, expensive to reverse
 
-**Estudar antes:** comportamento da quantidade não executada por insuficiência de liquidez,
-conforme fixado pelos exemplos do enunciado — *Guia §3*.
+\- [x] Establish the identifier generator and the arrival sequence counter
 
-- [x] Implementar o critério de aceitação irrestrita
-- [x] Descartar a quantidade remanescente, sem depositá-la no livro
-- [x] Testar o caso de liquidez insuficiente
+**\*\*Done when:\*\*** it is possible to create two orders at the same price and determine, by the sequence number, which one arrived first. In the adopted price representation, adding 0.10 and 0.20 and comparing with 0.30 returns true.
 
-**Pronto quando:** `market buy 200` contra 150 disponíveis imprime `Trade, price: 20, qty: 150` e o lado das vendas fica vazio: os 50 remanescentes não repousam no livro.
+\### 3. Price level queue
 
-### 9. Cancelamento
+Structure that supports time priority, with constant-time removal.
 
-Atende ao requisito A3.
+**\*\*Study before:\*\*** nodes; singly and doubly linked lists; references in Python;
 
-**Estudar antes:** remoção de nó em lista duplamente encadeada (*Guia §6*); consistência entre
-índices que referenciam a mesma ordem.
+FIFO queue; why \`list.pop(0)\` is O(N); sentinel nodes — *\*Guide §6\**.
 
-- [x] Localizar a ordem pelo identificador
-- [x] Remover da fila do nível e do índice de identificadores
-- [x] Atualizar a quantidade agregada e remover o nível, se esvaziado
-- [ ] Emitir a saída `Order cancelled`
-- [ ] Definir e documentar o comportamento para identificador inválido
-- [x] Testar o cancelamento nas três posições da fila
+\- [x] Implement the doubly linked queue, with head and tail
 
-**Pronto quando:** o exemplo do requisito adicional 3 é reproduzido — `Order cancelled` é emitido e a ordem desaparece do livro. Cancelar a ordem do meio de uma fila de três preserva a ligação entre as outras duas.
+\- [x] Implement tail insertion
 
-### 10. Alteração de ordens
+\- [x] Implement head removal
 
-Atende ao requisito A4.
+\- [x] Implement arbitrary node removal, without traversing the queue
 
-**Estudar antes:** regra do enunciado quanto à perda de prioridade na alteração de preço;
-prática de mercado quanto à alteração de quantidade — *Guia §10*.
+\- [x] Keep the aggregated quantity of the level updated
 
-- [x] Definir a sintaxe do comando, não especificada no enunciado
-- [x] Implementar a alteração de preço, com reposicionamento
-- [x] Implementar a alteração de quantidade, com a regra de prioridade adotada
-- [x] Verificar contra o exemplo do requisito adicional 4
-- [x] Registrar a regra adotada no `README.md`
+\- [x] Test removal at the head, middle and tail
 
-**Pronto quando:** o exemplo do requisito adicional 4 é reproduzido: alterada a compra de 200 @ 10 para 9,98, o livro passa a exibir 100 @ 9,99 acima de 200 @ 9,98.
+**\*\*Done when:\*\*** in a queue of three orders, removing the middle one keeps the other two correctly linked and the aggregated quantity equal to the sum of the remaining ones — without the method traversing the queue.
 
-### 11. Ordens pegged
+\### 4. Order book
 
-Atende ao requisito A5. É a etapa de maior complexidade conceitual.
+Indexes that locate the best price, a level and a specific order.
 
-**Estudar antes:** preço de referência; os quatro eventos que alteram o topo do livro;
-repreçagem síncrona; risco de cascata; a tensão entre os requisitos adicionais 4 e 5 —
-*Guia §11*.
+**\*\*Study before:\*\*** hash tables (*\*Guide §7\**); binary heap and \`heapq\`; representation of
 
-- [x] Implementar `reference_price`, excluindo as próprias ordens *pegged*
-- [x] Implementar `insert_by_seq` no `PriceLevel`
-- [x] Implementar `submit_pegged`, com o registro das *pegged* vivas
-- [x] Implementar o gatilho de repreçagem ao fim de toda operação que altere o topo
-- [x] Rejeitar peg cuja referência contradiz o lado
-- [x] Definir e documentar o comportamento sem preço de referência disponível
-- [x] Documentar a preservação do `seq` na repreçagem
-- [x] Reproduzir a sequência do requisito adicional 5
+*\*max-heap\** by negating the key (*\*Guide §8\**); lazy removal (*\*Guide §7\**).
 
-**Pronto quando:** a sequência do requisito adicional 5 é reproduzida integralmente, inclusive com a ordem *pegged* posicionada à frente da *limit* de 300 no nível de 10,1. Cancelada a ordem que define o *bid*, a *pegged* acompanha o novo melhor preço.
+**\*\*Tools:\*\*** \`dict\` · \`heapq.heappush\` · \`heapq.heappop\` · \`sortedcontainers.SortedDict\` (alternative) — *\*Guide §8\**.
 
-### 12. Interface de linha de comando
+\- [x] Implement the price-to-level index, by side
 
-Exposição das funcionalidades por comandos textuais.
+\- [x] Implement the identifier-to-order index
 
-**Estudar antes:** leitura da entrada padrão; análise sintática de comandos; separação entre
-apresentação e lógica de negócio — *Guia §13*.
+\- [x] Implement the price ranking structure, by side
 
-- [x] Implementar o laço de leitura e o analisador de comandos
-- [x] Suportar os seis comandos: `limit`, `market`, `peg`, `cancel order`, alteração e `print book`
-- [x] Emitir `Order created: <side> <qty> @ <price> <id>` ao aceitar uma ordem
-- [x] Emitir `Order cancelled` ao cancelar
-- [x] Formatar todo preço exibido com `format_price`
-- [x] Tratar entradas malformadas sem interromper a execução
-- [x] Assegurar que a engine permaneça independente da interface
+\- [x] Implement the best bid and best offer queries
 
-**Pronto quando:** o bloco de comandos do enunciado, colado no terminal, produz a saída esperada; e uma entrada malformada devolve mensagem de erro sem encerrar a sessão.
+\- [x] Implement automatic creation and removal of empty levels
 
-### 13. Suíte de testes
+\- [x] Test the consistency invariants
 
-Verificação sistemática da correção.
+**\*\*Done when:\*\*** inserting buys at 10, 9.99 and 9.98 in arbitrary order, the best bid query returns 10; after a level is emptied, it ceases to exist and the best price moves to the next one.
 
-**Estudar antes:** `unittest` ou `pytest` (*Guia §8*); invariantes; teste aleatório e a
-importância de fixar a semente — *Guia §14*.
+\### 5. Order book visualization
 
-**Ferramentas:** `unittest` ou `pytest` · `random.Random` com semente fixa — *Guia §8*.
+Meets requirement A1 and serves as a debugging tool for all following stages.
 
-- [x] Transcrever todos os exemplos do enunciado como testes
-- [x] Verificar os invariantes após cada operação
-- [ ] Implementar o teste aleatório sobre sequências extensas
-- [x] Cobrir os casos limítrofes de cancelamento e alteração
+**\*\*Study before:\*\*** string formatting and alignment; display by individual order
 
-**Pronto quando:** um único comando executa toda a suíte com sucesso, e o teste aleatório percorre alguns milhares de operações sem violar nenhum invariante.
+instead of aggregated level (*\*Guide §10\**).
 
-### 14. Documentação
+\- [x] Implement the two-column presentation
 
-Registro das decisões técnicas, conforme exigido pelo enunciado.
+\- [x] Display each order individually, preserving the queue
 
-**Estudar antes:** notação assintótica, para a análise de complexidade.
+\- [x] Verify against the hypothetical book from additional requirement 4
 
-- [x] Redigir as instruções de instalação e execução
-- [x] Descrever a arquitetura e as estruturas de dados adotadas
-- [x] Apresentar a análise de complexidade por operação
-- [x] Justificar cada decisão da seção 7 do `README.md`
-- [x] Registrar as limitações conhecidas
-- [ ] Extrair os comentários de estudo do código para um documento próprio, organizado por
-      módulo, mantendo no código apenas o que explica decisão não óbvia no ponto em que ela é
-      tomada — **última tarefa do projeto**
+**\*\*Done when:\*\*** the book from additional requirement 4 is displayed with buys in descending price order and sells in ascending order, one line per order.
 
-**Pronto quando:** uma pessoa que nunca viu o projeto consegue cloná-lo, executá-lo e reproduzir os exemplos usando apenas o `README.md`, e cada decisão da seção 7 tem justificativa escrita.
+\### 6. Limit order insertion
 
----
+Orders without a counterparty rest in the book, in the correct position.
 
-## Cronograma
+**\*\*Study before:\*\*** command grammar and argument order (*\*Guide §2\**); price-time priority
 
-O último dia é margem: nenhuma implementação deve ser planejada para 30/08.
+(*\*Guide §5\**); event-driven model (*\*Guide §3\**).
 
-| Data | Tarefas |
-|---|---|
-| Dom 23/08 | 1 · 2 |
-| Seg 24/08 | 3 |
-| Ter 25/08 | 4 · 5 |
-| Qua 26/08 | 6 · 7 |
-| Qui 27/08 | 8 · 9 · 10 |
-| Sex 28/08 | 11 |
-| Sáb 29/08 | 12 · 13 · 14 |
-| Dom 30/08 | Revisão, conferência do histórico e entrega |
+\- [x] Implement insertion, still without matching
 
-A tarefa 11 recebeu um dia inteiro por ser a de maior complexidade e a única sem precedente nas
-anteriores. Havendo atraso, é a que deve ser preservada: trata-se de requisito obrigatório.
+\- [x] Assign an identifier and sequence number to each accepted order
 
-Os testes das tarefas 3 e 4 são escritos junto com o código. A tarefa 13 consolida e amplia,
-não inaugura.
+\- [x] Check, through visualization, the ordering between levels and within the level
 
-## Justificativas
-* Uso de listas duplamente encadeadas: A inserção ou remoção de um elemento na lista não implica a mudança de lugar de outros elementos. Logo, temos um nível de complexidade O(1).
+**\*\*Done when:\*\*** the first three commands from the assignment example produce a book with one buy and two sells, with the sell of 100 ahead of the sell of 200 at the same level.
 
-## Conceitos
-* `Enum` : serve para criar um ***conjunto fechado de valores válidos***. Como no nosso projeto, as ordens só podem ser *buy* ou *sell*, vamos utilizar desse recurso para facilitar a definição das ordens que serão uma classe. 
-	* `@property`: É um decorador que transforma um método em **acesso de atributo** — você escreve `side.opposite` em vez de `side.opposite()`.
+\### 7. Matching engine
 
-## Commits
+Core order matching logic. It is the most important stage of the project.
 
-`tipo: descrição curta`
+**\*\*Study before:\*\*** distinction between crossing and execution; passive order price rule;
 
-Os tipos mais úteis para esse projeto são:
+minimum quantity rule; level sweeping; meaning of limit in a *\*limit\** order —
 
-- `feat:` nova funcionalidade  
-    Ex.: `feat: add order domain model`
-- `fix:` correção de bug  
-    Ex.: `fix: correct order removal from price level`
-- `test:` criação ou alteração de testes  
-    Ex.: `test: add price level removal tests`
-- `docs:` documentação  
-    Ex.: `docs: update project architecture section`
-- `refactor:` reorganização do código sem alterar o comportamento  
-    Ex.: `refactor: simplify price level removal logic`
-- `chore:` organização, configuração ou manutenção do projeto  
-    Ex.: `chore: organize project into src and tests directories`
-- `style:` mudanças de formatação sem alterar a lógica  
-    Ex.: `style: format order module`
-- `perf:` melhoria de desempenho  
-    Ex.: `perf: optimize best price lookup`
-- `build:` alterações relacionadas a dependências ou empacotamento  
-    Ex.: `build: add pytest dependency`
-- `ci:` mudanças em integração contínua  
-    Ex.: `ci: add automated test workflow`
+*\*Guide §4\**. Complete command flow — *\*Guide §9\**.
 
-## Estudo
+\- [x] Implement the matching loop, with a parameterized acceptance criterion
 
-- Entender melhor a parte de, ao procurar o melhor preço, ignorar as ordens pegged.
-## Problems 
-- When I do `eng.submit_limit(Side.BUY, Decimal("10.00000"), 100)` in the test, it shows all the decimal places. How to solve this?
-- When an order comes inside the orderbook, it doens't show its orderId. IT'S AN IMPORTANT THING TO DO
+\- [x] Emit the \`Trade\` output in the exact format from the assignment
+
+\- [x] Remove fully executed orders and emptied levels
+
+\- [x] Rest the remaining quantity of the aggressive order in the book
+
+\- [x] Reproduce the assignment example as an automated test
+
+\- [x] Record the decision regarding crossing *\*limit\** orders — \`docs/DECISIONS.md\`, D08
+
+**\*\*Done when:\*\*** the complete sequence from the assignment example produces exactly the three expected \`Trade\` lines. In addition, \`limit buy 25 250\` against sells of 100 @ 20, 100 @ 22 and 100 @ 26 generates two trades — at 20 and 22 — and leaves 50 resting at 25.
+
+\### 8. Market orders
+
+Special case of the previous algorithm, with unrestricted price acceptance.
+
+**\*\*Study before:\*\*** behavior of unexecuted quantity due to insufficient liquidity,
+
+as established by the examples from the assignment — *\*Guide §3\**.
+
+\- [x] Implement the unrestricted acceptance criterion
+
+\- [x] Discard the remaining quantity, without resting it in the book
+
+\- [x] Test the insufficient liquidity case
+
+**\*\*Done when:\*\*** \`market buy 200\` against 150 available prints \`Trade, price: 20, qty: 150\` and the sell side becomes empty: the remaining 50 do not rest in the book.
+
+\### 9. Cancellation
+
+Meets requirement A3.
+
+**\*\*Study before:\*\*** node removal in a doubly linked list (*\*Guide §6\**); consistency between
+
+indexes that reference the same order.
+
+\- [x] Locate the order by identifier
+
+\- [x] Remove it from the level queue and from the identifier index
+
+\- [x] Update the aggregated quantity and remove the level, if emptied
+
+\- [x] Emit the \`Order cancelled\` output
+
+\- [x] Define and document the behavior for an invalid identifier
+
+\- [x] Test cancellation in all three queue positions
+
+**\*\*Done when:\*\*** the example from additional requirement 3 is reproduced — \`Order cancelled\` is emitted and the order disappears from the book. Cancelling the middle order of a queue of three preserves the link between the other two.
+
+\### 10. Order modification
+
+Meets requirement A4.
+
+**\*\*Study before:\*\*** assignment rule regarding loss of priority when changing price;
+
+market practice regarding quantity changes — *\*Guide §10\**.
+
+\- [x] Define the command syntax, not specified in the assignment
+
+\- [x] Implement price modification, with repositioning
+
+\- [x] Implement quantity modification, with the adopted priority rule
+
+\- [x] Verify against the example from additional requirement 4
+
+\- [x] Record the adopted rule in \`README.md\`
+
+**\*\*Done when:\*\*** the example from additional requirement 4 is reproduced: after changing the buy of 200 @ 10 to 9.98, the book displays 100 @ 9.99 above 200 @ 9.98.
+
+\### 11. Pegged orders
+
+Meets requirement A5. It is the stage with the greatest conceptual complexity.
+
+**\*\*Study before:\*\*** reference price; the four events that change the top of the book;
+
+synchronous repricing; cascade risk; the tension between additional requirements 4 and 5 —
+
+*\*Guide §11\**.
+
+\- [x] Implement \`reference\_price\`, excluding the *\*pegged\** orders themselves
+
+\- [x] Implement \`insert\_by\_seq\` in \`PriceLevel\`
+
+\- [x] Implement \`submit\_pegged\`, with registration of live *\*pegged\** orders
+
+\- [x] Implement the repricing trigger at the end of every operation that changes the top
+
+\- [x] Reject a peg whose reference contradicts the side
+
+\- [x] Define and document the behavior when no reference price is available
+
+\- [x] Document preservation of \`seq\` during repricing
+
+\- [x] Reproduce the sequence from additional requirement 5
+
+**\*\*Done when:\*\*** the sequence from additional requirement 5 is fully reproduced, including the *\*pegged\** order positioned ahead of the *\*limit\** of 300 at the 10.1 level. After the order that defines the *\*bid\** is cancelled, the *\*pegged\** order follows the new best price.
+
+\### 12. Command-line interface
+
+Exposure of functionality through textual commands.
+
+**\*\*Study before:\*\*** reading standard input; command parsing; separation between
+
+presentation and business logic — *\*Guide §13\**.
+
+\- [x] Implement the input loop and command parser
+
+\- [x] Support the six commands: \`limit\`, \`market\`, \`peg\`, \`cancel order\`, modification and \`print book\`
+
+\- [x] Emit \`Order created: \<side> \<qty> @ \<price> \<id>\` when accepting an order
+
+\- [x] Emit \`Order cancelled\` when cancelling
+
+\- [x] Format every displayed price with \`format\_price\`
+
+\- [x] Handle malformed input without interrupting execution
+
+\- [x] Ensure the engine remains independent of the interface
+
+**\*\*Done when:\*\*** the command block from the assignment, pasted into the terminal, produces the expected output; and malformed input returns an error message without ending the session.
+
+\### 13. Test suite
+
+Systematic verification of correctness.
+
+**\*\*Study before:\*\*** \`unittest\` or \`pytest\` (*\*Guide §8\**); invariants; random testing and the
+
+importance of fixing the seed — *\*Guide §14\**.
+
+**\*\*Tools:\*\*** \`unittest\` or \`pytest\` · \`random.Random\` with a fixed seed — *\*Guide §8\**.
+
+\- [x] Transcribe all assignment examples as tests
+
+\- [x] Verify the invariants after every operation
+
+\- [ ] Implement the random test over long sequences
+
+\- [x] Cover edge cases of cancellation and modification
+
+**\*\*Done when:\*\*** a single command runs the entire suite successfully, and the random test goes through a few thousand operations without violating any invariant.
+
+\### 14. Documentation
+
+Record of technical decisions, as required by the assignment.
+
+**\*\*Study before:\*\*** asymptotic notation, for complexity analysis.
+
+\- [x] Write the installation and execution instructions
+
+\- [x] Describe the architecture and adopted data structures
+
+\- [x] Present the complexity analysis by operation
+
+\- [x] Justify each decision from section 7 of \`README.md\`
+
+\- [x] Record the known limitations
+
+**\*\*Done when:\*\*** a person who has never seen the project can clone it, run it and reproduce the examples using only \`README.md\`, and every decision in section 7 has a written justification.
+
+\---
+
+\## Schedule
+
+The last day is buffer time: no implementation should be planned for 30/08.
+
+\| Date | Tasks |
+
+\|---|---|
+
+\| Sun 23/08 | 1 · 2 |
+
+\| Mon 24/08 | 3 |
+
+\| Tue 25/08 | 4 · 5 |
+
+\| Wed 26/08 | 6 · 7 |
+
+\| Thu 27/08 | 8 · 9 · 10 |
+
+\| Fri 28/08 | 11 |
+
+\| Sat 29/08 | 12 · 13 · 14 |
+
+\| Sun 30/08 | Review, history check and delivery |
+
+Task 11 received a full day because it has the greatest complexity and is the only one without precedent in the
+
+previous tasks. In case of delay, it is the one that must be preserved: it is a mandatory requirement.
+
+The tests for tasks 3 and 4 are written together with the code. Task 13 consolidates and expands,
+
+it does not introduce them.
+
+\## Justifications
+
+\* Use of doubly linked lists: Inserting or removing an element from the list does not imply moving other elements. Therefore, we have an O(1) level of complexity.
+
+\## Concepts
+
+\* \`Enum\` : serves to create a **\*\****\*closed set of valid values\****\*\***. Since in our project, orders can only be *\*buy\** or *\*sell\**, we will use this resource to make it easier to define the orders that will be a class. 
+
+    \* \`@property\`: It is a decorator that transforms a method into **\*\*attribute access\*\*** — you write \`side.opposite\` instead of \`side.opposite()\`.
+
+\## Commits
+
+\`type: short description\`
+
+The most useful types for this project are:
+
+\- \`feat:\` new functionality  
+
+    Ex.: \`feat: add order domain model\`
+
+\- \`fix:\` bug fix  
+
+    Ex.: \`fix: correct order removal from price level\`
+
+\- \`test:\` creation or modification of tests  
+
+    Ex.: \`test: add price level removal tests\`
+
+\- \`docs:\` documentation  
+
+    Ex.: \`docs: update project architecture section\`
+
+\- \`refactor:\` code reorganization without changing behavior  
+
+    Ex.: \`refactor: simplify price level removal logic\`
+
+\- \`chore:\` project organization, configuration or maintenance  
+
+    Ex.: \`chore: organize project into src and tests directories\`
+
+\- \`style:\` formatting changes without changing logic  
+
+    Ex.: \`style: format order module\`
+
+\- \`perf:\` performance improvement  
+
+    Ex.: \`perf: optimize best price lookup\`
+
+\- \`build:\` changes related to dependencies or packaging  
+
+    Ex.: \`build: add pytest dependency\`
+
+\- \`ci:\` continuous integration changes  
+
+    Ex.: \`ci: add automated test workflow\`
+
+\## Study
+
+\- Better understand the part where, when searching for the best price, pegged orders are ignored.
+
+\## Problems 
+
+\- When I do \`eng.submit\_limit(Side.BUY, Decimal("10.00000"), 100)\` in the test, it shows all the decimal places. How to solve this?
+
+\- When an order comes inside the orderbook, it doens't show its orderId. IT'S AN IMPORTANT THING TO DO

@@ -5,14 +5,8 @@ from matching_engine.order import Side, OrderType, Order, PegReference
 import pytest
 
 def assert_book_invariants(engine):
-    """Structural checks that must hold after any operation, whatever it was.
-
-    Called at the end of each test so that a bug in one operation is caught by every test
-    that exercises it, not only by the test written for that operation.
-    """
     book = engine.book
 
-    # 1. The book is never crossed: the best bid must sit strictly below the best offer.
     best_bid = book.best_price(Side.BUY)
     best_offer = book.best_price(Side.SELL)
 
@@ -22,26 +16,21 @@ def assert_book_invariants(engine):
         )
 
     for side in (Side.BUY, Side.SELL):
-        for price, level in book.levels_for(side).items(): # visiting every level of "side". As it's inside for side in (Side.BUY, Side.SELL), it'll
-            # visit every level of both sides
+        for price, level in book.levels_for(side).items():
 
-            # It'll cross every order inside a level and stop when it reaches None. It's storing order objects inside queued
             queued = []
             current = level.first
             while current is not None:
                 queued.append(current)
                 current = current.next_order
 
-            # 2. A level that lost its last order must have been removed from the book (An empty list is False)
             assert queued, f"empty level left behind at {price} on the {side.value} side"
 
-            # 3. The aggregate must agree with the queue it summarises.
             queue_total = sum(order.qty for order in queued)
             assert level.total_qty == queue_total, (
                 f"level {price}: total_qty is {level.total_qty}, queue sums to {queue_total}"
             )
 
-            # 4. Position in the queue must agree with arrival order.
             sequences = [order.seq for order in queued]
             assert sequences == sorted(sequences), (
                 f"level {price}: queue order disagrees with arrival order, seqs are {sequences}"
@@ -68,17 +57,14 @@ def test_trade_str(price, qty, expected):
 
 def test_submit_limit_order():
 
-    # first instance of my project (already have the book inside of it)
     engine = MatchingEngine()
 
-    # Creating the first SELL order 
     sell_order = Order(Side.SELL,
         OrderType.LIMIT,
         100,
         Decimal("10")
     )
 
-    # Creating the first sell level
     level_sell = engine.book.get_or_create_level(
         Side.SELL,
         Decimal("10")
@@ -86,10 +72,8 @@ def test_submit_limit_order():
 
     level_sell.last_insert(sell_order)
 
-    # Placing it in the engine.book.orders
     engine.book.orders[sell_order.order_id] = sell_order 
 
-    # Creating the first BUY Order
     trades = engine.submit_limit(
         Side.BUY,
         Decimal("10"),
@@ -182,7 +166,6 @@ def test_submit_limit_respects_fifo():
         150
     )
 
-    # str(t) is transforming a Trade object in string. It'll be formated by its method "__str__"
     assert [str(t) for t in trades] == [
         "Trade, price: 10, qty: 150"
     ]
@@ -245,8 +228,6 @@ def test_limit_does_not_cross_when_price_unacceptable():
     )
 
     assert [str(t) for t in trades] == []
-
-# ---------------------------------------------- Market Order ---------------------------------------------- #
 
 def test_market_sweeps_multiple_levels():
 
@@ -356,16 +337,14 @@ def test_problem_statement_sequence():
     assert engine.book.bids == {}
     assert engine.book.orders == {}
 
-# ---------------------------------------------- Order cancellation ---------------------------------------------- #
-
 def test_cancel_removes_order_from_book():
     eng = MatchingEngine()
     eng.submit_limit(Side.BUY, Decimal("10"), 100)
-    oid = next(iter(eng.book.orders)) # iter(eng.book.order) create an iterator before the first element, so that's why we apply next()
+    oid = next(iter(eng.book.orders)) 
 
     eng.cancel(oid)
 
-    assert eng.book.best_price(Side.BUY) is None # It's taking from the eng.book.bid_prices
+    assert eng.book.best_price(Side.BUY) is None 
     assert len(eng.book.orders) == 0
     assert Decimal("10") not in eng.book.bids
     assert eng.book.bid_prices == []
@@ -428,8 +407,6 @@ def test_cancelled_order_does_not_match():
     assert [str(t) for t in trade] == []
     assert [str(t) for t in trade_market] == []
     print(eng.book.__str__())
-        
-# ---------------------------------------------- Order modification ---------------------------------------------- #
 
 def test_modify_price_reprices_and_loses_priority():
 
@@ -486,7 +463,6 @@ def test_modify_qty_increase_moves_to_tail():
 
     assert_book_invariants(eng)
 
-# ------------------------------------------ > Future review
 def test_modify_qty_decrease_keeps_position():
 
     eng = MatchingEngine()
@@ -499,7 +475,6 @@ def test_modify_qty_decrease_keeps_position():
 
     assert eng.modify(order_id, new_qty=50) == []
 
-    # Reducing does not harm anyone behind, so the order keeps its place and its sequence.
     assert eng.book.bids[Decimal("10")].first.order_id == order_id
     assert eng.book.bids[Decimal("10")].first.seq == seq_before
     assert eng.book.bids[Decimal("10")].first.qty == 50
@@ -516,7 +491,6 @@ def test_modify_crossing_price_executes():
 
     order_id = eng.book.bids[Decimal("10")].first.order_id
 
-    # Raising the bid above the best offer makes the order marketable (D08).
     trades = eng.modify(order_id, new_price=Decimal("10.6"))
 
     assert [str(t) for t in trades] == ["Trade, price: 10.5, qty: 100"]
@@ -550,7 +524,6 @@ def test_modify_to_zero_cancels():
 
     order_id = eng.book.bids[Decimal("10")].first.order_id
 
-    # D10: asking for zero quantity says the order is no longer wanted.
     assert eng.modify(order_id, new_qty=0) == []
 
     assert order_id not in eng.book.orders
@@ -573,7 +546,6 @@ def test_modify_to_zero_with_new_price_cancels():
     assert order_id not in eng.book.orders
     assert Decimal("10") not in eng.book.bids
 
-    # The price is ignored because there is no order left to reprice: no ghost level.
     assert Decimal("9") not in eng.book.bids
 
     assert_book_invariants(eng)
@@ -584,7 +556,6 @@ def test_modify_unknown_id_returns_none():
 
     eng.submit_limit(Side.BUY, Decimal("10"), 100)
 
-    # None means "no such order", as opposed to [] which would mean "no trades".
     assert eng.modify(9999, new_qty=50) is None
 
     assert eng.book.bids[Decimal("10")].total_qty == 100
@@ -614,7 +585,6 @@ def test_modify_rejects_invalid_price(invalid_price):
     with pytest.raises(ValueError):
         eng.modify(order_id, new_price=Decimal(invalid_price))
 
-    # A rejected modification must leave the book exactly as it was.
     assert eng.book.bids[Decimal("10")].total_qty == 100
     assert order_id in eng.book.orders
 
@@ -634,10 +604,6 @@ def test_modify_rejects_negative_qty():
 
     assert_book_invariants(eng)
 
-
-# Tests for submit_pegged
-#-----------------------------------------------------\-----------------------------------------------------#
-
 def test_submit_pegged_rests_at_reference():
 
     eng = MatchingEngine()
@@ -646,7 +612,6 @@ def test_submit_pegged_rests_at_reference():
     eng.submit_limit(Side.BUY, Decimal("9.99"), 100)
     eng.submit_limit(Side.SELL, Decimal("10.5"), 100)
 
-    # A passive peg never crosses, so it can only ever return an empty list.
     assert eng.submit_pegged(Side.BUY, PegReference.BID, 150) == []
 
     assert [line.rstrip() for line in str(eng.book).split("\n")] == [
@@ -659,7 +624,6 @@ def test_submit_pegged_rests_at_reference():
 
     peg_id = max(eng.pegged_orders)
 
-    # Registered in both indices: the book one makes it cancellable and lets _match delete it.
     assert peg_id in eng.book.orders
     assert eng.pegged_orders[peg_id] is eng.book.orders[peg_id]
 
@@ -675,7 +639,6 @@ def test_submit_pegged_on_offer_side():
 
     level = eng.book.offers[Decimal("10.5")]
 
-    # The statement closes requirement 5 by saying a peg to the offer works the same way.
     assert level.first.qty == 100
     assert level.last.qty == 50
     assert level.last.peg_reference is PegReference.OFFER
@@ -689,7 +652,7 @@ def test_submit_pegged_on_offer_side():
         (Side.BUY, PegReference.OFFER),
         (Side.SELL, PegReference.BID),
     ],
-) # Run the same method (below) for the each tuple of the list above 
+) 
 
 def test_submit_pegged_rejects_mismatched_reference(side, peg_reference):
 
@@ -700,7 +663,6 @@ def test_submit_pegged_rejects_mismatched_reference(side, peg_reference):
 
     before = str(eng.book)
 
-    # D12: only passive pegs exist. The rejection comes from Order.__post_init__.
     with pytest.raises(ValueError):
         eng.submit_pegged(side, peg_reference, 150)
 
@@ -715,7 +677,6 @@ def test_submit_pegged_rejects_without_reference():
 
     eng.submit_limit(Side.SELL, Decimal("10.5"), 100)
 
-    # D13: nothing to derive a price from, so the order cannot exist.
     with pytest.raises(ValueError):
         eng.submit_pegged(Side.BUY, PegReference.BID, 150)
 
@@ -732,9 +693,6 @@ def test_submit_pegged_ignores_other_pegged_as_reference():
     eng.submit_limit(Side.BUY, Decimal("9.99"), 100)
     eng.submit_pegged(Side.BUY, PegReference.BID, 150)
 
-    # Cancelling the limit leaves level 10 holding nothing but the first pegged order. That
-    # level is the one the reference must refuse to use. Without the repricing trigger the
-    # stranded order stays at 10, which is what makes the state reachable in this test.
     limit_at_ten = eng.book.bids[Decimal("10")].first.order_id
     eng.cancel(limit_at_ten)
 
@@ -742,8 +700,6 @@ def test_submit_pegged_ignores_other_pegged_as_reference():
 
     first_peg, second_peg = (eng.pegged_orders[i] for i in sorted(eng.pegged_orders))
 
-    # Both pegs sit at 9.99: the first followed the reference down when the limit at 10 was
-    # cancelled, and the second read that same limit — never the peg already resting there.
     assert first_peg.price == Decimal("9.99")
     assert second_peg.price == Decimal("9.99")
     assert list(eng.book.bids) == [Decimal("9.99")]
@@ -760,7 +716,6 @@ def test_pegged_is_consumed_like_any_order():
 
     peg_id = max(eng.pegged_orders)
 
-    # Once resting, a pegged order is an ordinary order: _match never reads peg_reference.
     assert [str(t) for t in eng.submit_market(Side.SELL, 350)] == [
         "Trade, price: 10, qty: 350"
     ]
@@ -848,7 +803,6 @@ def test_pegged_does_not_move_when_reference_unchanged():
     peg = eng.pegged_orders[max(eng.pegged_orders)]
     seq_before = peg.seq
 
-    # 9.98 is worse than the current best bid, so the reference does not move.
     eng.submit_limit(Side.BUY, Decimal("9.98"), 50)
 
     assert peg.price == Decimal("10")
@@ -867,14 +821,11 @@ def test_pegged_reprices_after_modify():
     limit_id = eng.book.bids[Decimal("10")].first.order_id
     peg = eng.pegged_orders[max(eng.pegged_orders)]
 
-    # If the trigger is missing from any of _modify's return points, the peg stays at 10.
     eng.modify(limit_id, new_price=Decimal("10.2"))
 
     assert peg.price == Decimal("10.2")
     assert Decimal("10") not in eng.book.bids
 
-    # The limit renewed its seq when repriced (D10); the peg kept its own (D14), so the peg
-    # now sits ahead of the order it is following.
     assert [line.rstrip() for line in str(eng.book).split("\n")] == [
         "Ordens de Compra     | Ordens de Venda",
         "---------------------|-----------------",
@@ -894,8 +845,6 @@ def test_pegged_cancelled_when_reference_disappears():
     peg_id = max(eng.pegged_orders)
     limit_id = eng.book.bids[Decimal("10")].first.order_id
 
-    # With the only non-pegged buy gone there is no reference left, and a pegged order does
-    # not exist without one (D13).
     eng.cancel(limit_id)
 
     assert peg_id not in eng.book.orders
@@ -915,8 +864,6 @@ def test_two_pegged_keep_relative_order():
 
     eng.submit_limit(Side.BUY, Decimal("10.1"), 300)
 
-        # Both follow, keep their order between themselves, and both sit ahead of the limit that
-    # created the level. insert_by_seq settles this regardless of the order they are visited.
     assert [line.rstrip() for line in str(eng.book).split("\n")] == [
         "Ordens de Compra     | Ordens de Venda",
         "---------------------|-----------------",
@@ -938,13 +885,10 @@ def test_modify_rejects_price_change_on_pegged():
     peg_id = max(eng.pegged_orders)
     peg = eng.pegged_orders[peg_id]
 
-    # D15: the price of a pegged order is derived, not owned.
     with pytest.raises(ValueError):
         eng.modify(peg_id, new_price=Decimal("10.5"))
 
     assert peg.price == Decimal("10")
-
-    # Quantity is still the owner's to change.
     assert eng.modify(peg_id, new_qty=100) == []
     assert peg.qty == 100
     assert eng.book.bids[Decimal("10")].total_qty == 300

@@ -1,14 +1,3 @@
-"""
-    Here, we're going to construct the structure of a OrderBook. It needs to have a dict for BUY and SELL side, as well as 
-    a dict to identify an order based on the id, because we'll remove and modifiy by the id. 
-
-    Furthermore, we're going to use heap to have access to the lowest or higher value along our OrderBook (both in SELL and BUY side)
-
-    Something I thought: The OrderBook is responsible for managing everything. You have two sides: SELL and BUY. Inside of each one,
-    you have different price levels. So, the OrderBook is responsible for having all of this. In this way, we'll have only ONE 
-    OrderBook. 
-"""
-
 from decimal import Decimal
 
 from .order import Order, Side, OrderType, format_price, PegReference
@@ -19,12 +8,11 @@ import heapq
 
 class OrderBook:
     def __init__(self):
-        self.bids = {} # Key: price | Value: PriceLevel (BUY) | It stores each side level of the OrderBook
-        self.offers = {} # Key: price | Value: PriceLevel (SELL)
+        self.bids = {} 
+        self.offers = {} 
 
-        self.orders = {}  # Key: order_id | Value: Order (average O(1) lookup) 
+        self.orders = {}  
         
-        # It'll be used to store the best BID and best OFFER (ASK)
         self.bid_prices = []
         self.offer_prices = []
 
@@ -41,8 +29,8 @@ class OrderBook:
 
 
     def __str__(self) -> str:
-        showing_bid_prices = sorted(self.bids.keys(), reverse=True) # descending order
-        showing_offer_prices = sorted(self.offers.keys()) # ascending order
+        showing_bid_prices = sorted(self.bids.keys(), reverse=True) 
+        showing_offer_prices = sorted(self.offers.keys()) 
         lines_bids = []
         lines_offers = []
 
@@ -89,14 +77,14 @@ class OrderBook:
 
         levels = self.levels_for(side)
 
-        if price in levels: # average O(1) lookup
-            return levels[price] # It'll return the PriceLevel object
+        if price in levels:
+            return levels[price] 
 
-        levels[price] = PriceLevel(price) # Creating a PriceLevel inside of self.bids or self.offers 
+        levels[price] = PriceLevel(price) 
         
         if side is Side.BUY:
-            heapq.heappush(self.bid_prices, -price) # Storing the values of BID in a heap, in a way that the higher element
-            # stay in the first position (this occurs because I put a negative signal when passing the value to the function)
+            heapq.heappush(self.bid_prices, -price) 
+            
 
         else:
             heapq.heappush(self.offer_prices, price)
@@ -108,22 +96,22 @@ class OrderBook:
 
             current_best_bid = -self.bid_prices[0]
 
-            if current_best_bid in self.bids: # If the price still exists in the dict
+            if current_best_bid in self.bids: 
                 return current_best_bid
 
-            heapq.heappop(self.bid_prices)  # Lazy deletion - O(log P)
+            heapq.heappop(self.bid_prices)  
 
         return None
 
     def best_offer(self) -> Decimal | None:
-        while self.offer_prices: # List of order prices (can be outdated - It's proposal)
+        while self.offer_prices: 
 
             current_best_offer = self.offer_prices[0]
 
-            if current_best_offer in self.offers: # If the price still exists in the dict
+            if current_best_offer in self.offers: 
                 return current_best_offer
 
-            heapq.heappop(self.offer_prices) # Lazy deletion - O(log P) - Removes the lower element and calculates the new lower element
+            heapq.heappop(self.offer_prices) 
 
         return None
 
@@ -140,18 +128,16 @@ class OrderBook:
 
         raise ValueError("Invalid side")
 
-
-    # It removes from self.bids or self.offers, but it doesn't do it for the self.offer_prices and self.bid_prices (VERY IMPORTANT)
     def remove_empty_level(
     self,
     side: Side,
     price: Decimal
     ):  
 
-        levels = self.levels_for(side) # levels: self.bids/offers
+        levels = self.levels_for(side) 
 
-        if price in levels: # Does the price exist in the dict?
-            level = levels[price] # Taking the level and verifying if it's empty
+        if price in levels: 
+            level = levels[price] 
 
             if level.first is None:
                 del levels[price]
@@ -159,19 +145,14 @@ class OrderBook:
     def reference_price(self, 
         peg_reference: PegReference
     ) -> Decimal | None:
-        """ 
-            Here we're going to extract the best price corresponding to PegReference side, considering only 'peg_reference is None' orders.
-            Nothing guarantees me that the best price is a order with "peg_reference is None". In that way, we need to iterate over 
-            the choosen side of the book along the SORTED(descending -> BID | ascending -> OFFER) orders and find the first order with
-            peg_reference is None 
-        """ 
+        
         if peg_reference is PegReference.BID:
-            sorted_bid = sorted(self.bids.items(), reverse=True) # Dict self.bids (Price --> PriceLevel) sorted in descending order (it contains both key and value)
+            sorted_bid = sorted(self.bids.items(), reverse=True) 
             unpegged_price = self.finding_unpegged_order(sorted_bid)
             return unpegged_price
         
         else: 
-            sorted_offer = sorted(self.offers.items()) # Dict self.offers (Price --> PriceLevel) sorted in ascending order 
+            sorted_offer = sorted(self.offers.items()) 
             unpegged_price = self.finding_unpegged_order(sorted_offer)
             return unpegged_price
                     
@@ -179,7 +160,7 @@ class OrderBook:
         sorted_side: tuple
     ) -> Decimal | None:
 
-        for price, level in sorted_side: # For each price, we'll cross its queue starting from *first*, using next_order to go to the next one.
+        for price, level in sorted_side: 
             unpegged_price = price
             current = level.first
 
@@ -188,6 +169,6 @@ class OrderBook:
                 if current.peg_reference is None:
                     return unpegged_price
 
-                current = current.next_order        # We will return the first price that contains a non-pegged order 
+                current = current.next_order       
             
         return None

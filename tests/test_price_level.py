@@ -122,9 +122,6 @@ def test_remove_from_empty_level():
     assert level.last is None
     assert level.total_qty == 0
 
-# -------------------------------------------------------- \\ -------------------------------------------------------- #
-# Here we're going to test the methods that submit_limit is going to use, before see all the integration
-
 def test_fill_first_partial():
 
     level = PriceLevel(Decimal("10.00"))
@@ -191,19 +188,15 @@ def test_fill_first_removes_only_order():
     assert level.last is None
     assert level.total_qty == 0
 
-
-# Tests for the insert_by_seq method of price_level.py
-#-----------------------------------------------------\-----------------------------------------------------#
-
 def make_orders(how_many):
-    """Create orders in ascending seq order, so that seq order is creation order."""
+    
     return [
         Order(side=Side.BUY, order_type=OrderType.LIMIT, qty=100, price=Decimal("10"))
         for _ in range(how_many)
     ]
 
 def queued(level):
-    """Walk the queue from the head and return the orders in queue order."""
+    
     out = []
     current = level.first
 
@@ -232,7 +225,6 @@ def test_insert_by_seq_as_new_head():
     level.insert_by_seq(b)
     level.insert_by_seq(a)
 
-    # a was created first, so it owns the older seq and belongs in front.
     assert queued(level) == [a, b]
     assert level.first is a
     assert level.last is b
@@ -262,7 +254,6 @@ def test_insert_by_seq_at_tail():
     level.insert_by_seq(a)
     level.insert_by_seq(b)
 
-    # Nothing arrived after b, so this is the same outcome as last_insert.
     assert queued(level) == [a, b]
     assert level.last is b
     assert b.next_order is None
@@ -277,7 +268,6 @@ def test_insert_by_seq_keeps_queue_sorted():
 
     assert queued(level) == [a, b, c, d]
 
-    # The links must agree walking backwards too, not only forwards.
     walked_back = []
     current = level.last
 
@@ -301,6 +291,5 @@ def test_insert_by_seq_matches_last_insert_when_in_order():
     for order in (d, e, f):
         by_tail.last_insert(order)
 
-    # Fed in arrival order, the two methods produce the same shape.
     assert [o.qty for o in queued(by_seq)] == [o.qty for o in queued(by_tail)]
     assert by_seq.total_qty == by_tail.total_qty
