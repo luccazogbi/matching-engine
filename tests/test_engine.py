@@ -856,3 +856,30 @@ def test_pegged_does_not_move_when_reference_unchanged():
     assert eng.book.bids[Decimal("10")].last is peg
 
     assert_book_invariants(eng)
+
+def test_pegged_reprices_after_modify():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_pegged(Side.BUY, PegReference.BID, 150)
+
+    limit_id = eng.book.bids[Decimal("10")].first.order_id
+    peg = eng.pegged_orders[max(eng.pegged_orders)]
+
+    # If the trigger is missing from any of _modify's return points, the peg stays at 10.
+    eng.modify(limit_id, new_price=Decimal("10.2"))
+
+    assert peg.price == Decimal("10.2")
+    assert Decimal("10") not in eng.book.bids
+
+        # The limit renewed its seq when repriced (D10); the peg kept its own (D14), so the peg
+    # now sits ahead of the order it is following.
+    assert [line.rstrip() for line in str(eng.book).split("\n")] == [
+        "Ordens de Compra     | Ordens de Venda",
+        "---------------------|-----------------",
+        "150 @ 10.2           |",
+        "200 @ 10.2           |",
+    ]
+
+    assert_book_invariants(eng)
