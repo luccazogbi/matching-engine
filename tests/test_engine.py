@@ -925,3 +925,28 @@ def test_two_pegged_keep_relative_order():
         "300 @ 10.1           |",
         "200 @ 10             |",
     ]
+
+    assert_book_invariants(eng)
+
+def test_modify_rejects_price_change_on_pegged():
+
+    eng = MatchingEngine()
+
+    eng.submit_limit(Side.BUY, Decimal("10"), 200)
+    eng.submit_pegged(Side.BUY, PegReference.BID, 150)
+
+    peg_id = max(eng.pegged_orders)
+    peg = eng.pegged_orders[peg_id]
+
+    # D15: the price of a pegged order is derived, not owned.
+    with pytest.raises(ValueError):
+        eng.modify(peg_id, new_price=Decimal("10.5"))
+
+    assert peg.price == Decimal("10")
+
+    # Quantity is still the owner's to change.
+    assert eng.modify(peg_id, new_qty=100) == []
+    assert peg.qty == 100
+    assert eng.book.bids[Decimal("10")].total_qty == 300
+
+    assert_book_invariants(eng)
