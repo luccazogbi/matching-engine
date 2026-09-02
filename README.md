@@ -137,6 +137,7 @@ assignment. Since only passive pegs are accepted (§7.7), the side is redundant 
 and serves as a check: `peg offer buy` is rejected due to contradiction.
 
 ### Example
+The book layout is reproduced exactly as specified in the assignment, in the original language, so the output can be compared against it literally. The tests assert on these strings.
 
 Session reproducing additional requirement 5:
 
@@ -150,7 +151,7 @@ Order created: sell 100 @ 10.5 3
 >> peg bid buy 150
 Order created: buy 150 @ 10 4
 >> print book
-Buy Orders           | Sell Orders
+Ordens de Compra     | Ordens de Venda
 ---------------------|-----------------
 200 @ 10             | 100 @ 10.5
 150 @ 10             |
@@ -158,7 +159,7 @@ Buy Orders           | Sell Orders
 >> limit buy 10.1 300
 Order created: buy 300 @ 10.1 5
 >> print book
-Buy Orders           | Sell Orders
+Ordens de Compra     | Ordens de Venda
 ---------------------|-----------------
 150 @ 10.1           | 100 @ 10.5
 300 @ 10.1           |
@@ -167,7 +168,7 @@ Buy Orders           | Sell Orders
 >> cancel order 5
 Order cancelled
 >> print book
-Buy Orders           | Sell Orders
+Ordens de Compra     | Ordens de Venda
 ---------------------|-----------------
 200 @ 10             | 100 @ 10.5
 150 @ 10             |
