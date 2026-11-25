@@ -84,8 +84,7 @@ python -m pip install -e ".[dev]"
 ```
 
 The project adopts the `src/` layout, so the package is only importable after installation in
-editable mode — which ensures that the tests exercise the installed package, not the files from the
-working directory.
+editable mode. The tests do not depend on it, because `pyproject.toml` adds `src/` to the import path.
 
 ### Usage
 
@@ -239,29 +238,36 @@ to traverse the queue to find it. A Python list would give O(N) for this operati
 `pop(0)` shift the following elements.
 
 **Dictionaries** as indexes. `bids` and `offers` map price to level, and `orders` maps
-identifier to order. The second one is what makes cancellation and modification O(1): the
-identifier leads directly to the object, which in turn knows which level it is in.
+identifier to order. The second one is what makes locating an order O(1) in cancellation and
+modification: the identifier leads directly to the object, which carries its side and price, and
+therefore its level.
 
 **Binary heaps** for the best price. `heapq` implements only a *min-heap*, so the buy side
 stores negated prices and the read operation reverses the sign. Removal is **lazy**: a
 price is never removed from the middle of the heap. When the top points to a price that no longer exists in the
-levels dictionary, it is discarded on the next read. Each price is pushed and discarded
-at most once, so the cost is amortized.
+levels dictionary, it is discarded on the next read. A price is pushed every time its level is
+created, so a level that empties and reappears leaves duplicate entries, and the heap may hold more
+entries than there are live levels. Each entry is discarded at most once, so the cost is amortized.
 
 | Operation | Complexity | Responsible structure |
 |---|---|---|
 | Insertion of a resting order | O(1), or O(log P) if creating a level | `PriceLevel`, heap |
 | Matching | O(K + M log P) | `OrderBook`, `PriceLevel` |
-| Cancellation | O(1) | `orders` index, queue |
+| Cancellation | O(1) to locate and remove | `orders` index, queue |
 | Decreasing quantity | O(1) | queue, without leaving the position |
 | Price modification | O(1) + matching cost + O(log P) | queue, heap |
 | Best price lookup | O(1) on read, O(log P) amortized | heap |
 | *Pegged* reference price | O(P log P + N) | level scan |
 | *Pegged* order repricing | O(G × (P log P + N + Q)) | scan and ordered reinsertion |
 
-Notation: `N` denotes the number of orders, `P` the number of distinct price levels, `K` the number
-of orders consumed in a match, `M` the number of levels emptied in that match, `G` the
-number of live *pegged* orders and `Q` the length of the destination queue.
+Every operation that can move the top of the book, cancellation included, ends with the repricing
+pass of the last row, which is not counted in the rows above. With no live *pegged* orders that pass
+is O(1).
+
+Notation: `N` denotes the number of orders, `P` the number of distinct price levels (in the heap
+terms, the number of entries, stale ones included), `K` the number of orders consumed in a match,
+`M` the number of levels emptied in that match, `G` the number of live *pegged* orders and `Q` the
+length of the destination queue.
 
 The last two rows are the expensive operations in the project, and the reason is explained in §9.
 
@@ -379,13 +385,14 @@ The main verification consists of the **specification examples transcribed liter
 compared line by line with the output of `OrderBook.__str__`. It is the most direct check of the
 expected behavior.
 
-In addition, the engine tests end by calling `assert_book_invariants`, which checks
-four properties that must hold after any operation, regardless of which one:
+In addition, many of the engine tests end by calling `assert_book_invariants`, which checks
+five properties that must hold after any operation, regardless of which one:
 
 1. the book is never crossed — the best *bid* is strictly lower than the best *offer*;
 2. no empty level remains in the dictionary;
 3. the `total_qty` of each level is equal to the sum of the quantities in its queue;
-4. `seq` is increasing along the queue of each level.
+4. `seq` is increasing along the queue of each level;
+5. no level holds only *pegged* orders.
 
 The fourth is what supports time priority. Queue order and `seq` are two
 representations of the same information, and keeping them consistent is what makes it possible to verify priority
@@ -393,7 +400,7 @@ independently of the structure that implements it.
 
 | Layer | Objective | Status |
 |---|---|---|
-| Specification examples | Verify compliance with the specification | [x] partial — the *pegged* example is still missing |
+| Specification examples | Verify compliance with the specification | [x] |
 | Book invariants | Verify consistency after each operation | [x] |
 | Random test (*fuzz*) | Explore sequences not manually anticipated | [ ] |
 | Edge cases | Cover cancellation and modification in different positions | [x] |
